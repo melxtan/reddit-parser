@@ -29,34 +29,12 @@ requires-python = ">=3.7"
 dev = ["pytest", "black", "flake8"]
 
 [project.urls]
-Homepage = "https://github.com/my-moon-watcher/reddit-scraper"
+Homepage = "https://github.com/yourusername/reddit-scraper"
 
-[tool.setuptools]
-packages = ["reddit_scraper"]
-
-[tool.black]
-line-length = 88
-target-version = ['py37']
-include = '\.pyi?$'
-extend-exclude = '''
-/(
-  # directories
-  \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | build
-  | dist
-)/
-'''
-
-[tool.flake8]
-max-line-length = 88
-extend-ignore = ["E203", "E266", "E501", "W503"]
-max-complexity = 18
-select = ["B","C","E","F","W","T4"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["reddit_scraper*"]
+exclude = ["tests*"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
