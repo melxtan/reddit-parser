@@ -41,7 +41,7 @@ keywords = ["reddit", "scraper", "streamlit", "selenium"]
 requires-python = ">=3.8"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/reddit-scraper"
+Homepage = "https://github.com/my-moon-watcher/reddit-scraper"
 
 [tool.setuptools.packages.find]
 where = ["."]
