@@ -1,0 +1,89 @@
+[build-system]
+requires = ["poetry-core>=1.0.0", "setuptools>=45", "wheel"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "reddit-scraper"
+version = "0.1.0"
+description = "A Streamlit app for scraping Reddit posts based on search queries"
+authors = ["Melissa Tan <melissaxiaotan@gmail.com>, Cheng Yang <cheng@themoonwatcher.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "reddit_scraper", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+streamlit = "^1.38.0"
+pandas = "^2.2.2"
+praw = "^7.5.0"
+selenium = "^4.1.0"
+beautifulsoup4 = "^4.10.0"
+python-dotenv = "^0.19.2"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"
+black = "^24.8.0"
+flake8 = "^7.1.1"
+flake8-pyproject = "^1.2.3"
+ruff = "^0.6.6"
+
+[project]
+name = "reddit-scraper"
+version = "0.1.0"
+description = "A Streamlit app for scraping Reddit posts based on search queries"
+readme = "README.md"
+authors = [{name = "Your Name", email = "your.email@example.com"}]
+license = {file = "LICENSE"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+keywords = ["reddit", "scraper", "streamlit", "selenium"]
+requires-python = ">=3.8"
+
+[project.urls]
+Homepage = "https://github.com/my-moon-watcher/reddit-scraper"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["reddit_scraper*"]
+exclude = ["tests*"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests",
+]
+
+[tool.pylance]
+extraPaths = ["./src/reddit_scraper"]
+
+[tool.pyright]
+extraPaths = ["./src/reddit_scraper"]
+
+[tool.flake8]
+max-line-length = 120
+extend-ignore = ["E203", "E266", "E501", "W503"]
+max-complexity = 18
+select = ["B","C","E","F","W","T4","B9"]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I001"]
+ignore = []
+fixable = ["ALL"]
+exclude = [
+    ".git",
+    ".ruff_cache",
+    ".venv",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["reddit_scraper"]
