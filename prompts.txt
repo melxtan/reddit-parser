@@ -85,12 +85,12 @@ a. Recommendation of lightweight sports shoes with good value for money
 b. Guide to low-priced high-performance running shoes
 c. Evaluation of sports shoes with good value for money
 5.3 SEO keyword structure and content analysis
-a. where to buy {brand} sneakers in {size} for {gender}, {price range}
+a. where to buy brand sneakers in size for gender, price range
 Variables:
-- {brand}: Nike, Adidas, Converse, New Balance, Jordan, Vans, Puma, Reebok, Skechers, Under Armour
-- {size}: US 7, US 8, US 9, US 10, US 11, US 12, US 13, US 14, US 15, EU 41
-- {gender}: men, women, kids, unisex, boys, girls, youth, senior, plus size, athletic
-- {price range}: under $50, $50-$100, $100-$200, $200-$300, $300-$500, premium, budget, mid-range, luxury, clearance
+- brand example: Nike, Adidas, Converse, New Balance, Jordan, Vans, Puma, Reebok, Skechers, Under Armour
+- size example: US 7, US 8, US 9, US 10, US 11, US 12, US 13, US 14, US 15, EU 41
+- gender example: men, women, kids, unisex, boys, girls, youth, senior, plus size, athletic
+- price range example: under $50, $50-$100, $100-$200, $200-$300, $300-$500, premium, budget, mid-range, luxury, clearance
 Content Analysis: Target footwear searches for specific brands, sizes, and genders, with an emphasis on price ranges and personalized options.
 5.4 Main brands and products mentioned, frequency and attitudes
 a. New Balance 990v5 (5 times, positive)
