@@ -138,24 +138,34 @@ def analyze_reddit_data(post_data: List[Dict],
     return analyzer.analyze_posts(post_data, chunk_size)
 
 def combine_analyses(results: List[Dict]) -> str:
-    """Combine multiple chunk analyses into one coherent analysis"""
     combined_text = ""
     
     for result in results:
-        analysis = result.get('analysis', '')
-        if not analysis:
+        analysis = result.get('analysis', {})
+        if isinstance(analysis, str):
+            analysis_text = analysis
+        elif isinstance(analysis, dict) and 'content' in analysis:
+            # Handle new response structure
+            content = analysis['content']
+            if isinstance(content, list):
+                # Extract text from content array
+                analysis_text = '\n'.join(
+                    item.get('text', '') 
+                    for item in content 
+                    if item.get('type') == 'text'
+                )
+            else:
+                analysis_text = str(content)
+        else:
             continue
             
-        # Remove duplicate headers and merge content
-        lines = analysis.split('\n')
+        lines = analysis_text.split('\n')
         for line in lines:
-            # Skip duplicate headers like "1. Title and Post Text Analysis:"
             if any(header in line for header in ["1. Title", "2. Language", "3. Sentiment", "4. Trend", "5. Correlation"]):
                 if line not in combined_text:
                     combined_text += "\n" + line + "\n"
             else:
                 combined_text += line + "\n"
     
-    # Clean up the combined text
     combined_text = combined_text.replace("\n\n\n", "\n\n")
     return combined_text.strip()
