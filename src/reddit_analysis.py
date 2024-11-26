@@ -35,7 +35,7 @@ class RedditAnalyzer:
     def _load_prompt_template(self):
         """Load the prompt template from current directory"""
         try:
-            with open('prompts.txt', 'r', encoding='utf-8') as file:
+            with open('paste.txt', 'r', encoding='utf-8') as file:
                 return file.read()
         except Exception as e:
             logger.error(f"Error loading template: {str(e)}")
@@ -54,15 +54,19 @@ class RedditAnalyzer:
         retry=tenacity.retry_if_exception_type(Exception),
         before_sleep=lambda retry_state: logger.info(f"Retrying after {retry_state.next_action.sleep} seconds...")
     )
-    def _analyze_chunk(self, chunk: Dict) -> Dict:
+    def _analyze_chunk(self, posts: List[Dict]) -> Dict:
+        """Analyze a chunk of Reddit posts"""
         self._rate_limit()
         
         try:
-            prompt_content = self.template.format(search_query=chunk.get('subreddit', ''))
+            # Get the subreddit from the first post in the chunk, or use a default
+            search_query = posts[0].get('subreddit', '') if posts else ''
+            
+            prompt_content = self.template.format(search_query=search_query)
             
             prompt = {
                 "prompt": "\n\nHuman: Please analyze this Reddit data according to the following protocol:\n\n" + 
-                         json.dumps(chunk, indent=2) + "\n\n" +
+                         json.dumps(posts, indent=2) + "\n\n" +
                          "Protocol:\n" + prompt_content + "\n\nAssistant: ",
                 "max_tokens": 4096,
                 "temperature": 0.7,
@@ -76,8 +80,9 @@ class RedditAnalyzer:
             
             response_body = json.loads(response.get('body').read())
             return {
-                'chunk_id': chunk.get('id'),
-                'analysis': response_body.get('completion')
+                'chunk_id': f"chunk_{time.time()}",  # Generate a unique ID for the chunk
+                'analysis': response_body.get('completion'),
+                'posts_analyzed': len(posts)
             }
             
         except Exception as e:
@@ -85,6 +90,8 @@ class RedditAnalyzer:
             raise
 
     def analyze_posts(self, posts: List[Dict], chunk_size: int = 5) -> List[Dict]:
+        """Split posts into chunks and analyze each chunk"""
+        # Split posts into chunks
         chunks = [posts[i:i + chunk_size] for i in range(0, len(posts), chunk_size)]
         results = []
         
@@ -101,7 +108,7 @@ class RedditAnalyzer:
                 try:
                     analysis = future.result()
                     results.append(analysis)
-                    logger.info(f"Successfully analyzed chunk {analysis.get('chunk_id')}")
+                    logger.info(f"Successfully analyzed chunk with {analysis.get('posts_analyzed', 0)} posts")
                 except Exception as e:
                     logger.error(f"Failed to analyze chunk: {str(e)}")
                     
