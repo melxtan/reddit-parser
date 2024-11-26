@@ -138,34 +138,63 @@ def analyze_reddit_data(post_data: List[Dict],
     return analyzer.analyze_posts(post_data, chunk_size)
 
 def combine_analyses(results: List[Dict]) -> str:
+    """Combine multiple chunk analyses into one coherent analysis"""
     combined_text = ""
     
     for result in results:
-        analysis = result.get('analysis', {})
-        if isinstance(analysis, str):
-            analysis_text = analysis
-        elif isinstance(analysis, dict) and 'content' in analysis:
-            # Handle new response structure
-            content = analysis['content']
-            if isinstance(content, list):
-                # Extract text from content array
-                analysis_text = '\n'.join(
-                    item.get('text', '') 
-                    for item in content 
-                    if item.get('type') == 'text'
-                )
-            else:
-                analysis_text = str(content)
-        else:
+        if not result:
             continue
             
+        analysis = result.get('analysis', {})
+        
+        # Handle potential response structures
+        if isinstance(analysis, str):
+            analysis_text = analysis
+        elif isinstance(analysis, dict):
+            if 'content' in analysis:
+                content = analysis['content']
+                if isinstance(content, list):
+                    # Extract text from content array
+                    analysis_text = '\n'.join(
+                        item.get('text', '') 
+                        for item in content 
+                        if isinstance(item, dict) and item.get('type') == 'text'
+                    )
+                else:
+                    analysis_text = str(content)
+            elif 'text' in analysis:
+                analysis_text = analysis['text']
+            else:
+                logging.warning(f"Unexpected analysis structure: {analysis}")
+                continue
+        else:
+            logging.warning(f"Unknown analysis type: {type(analysis)}")
+            continue
+            
+        # Skip if we didn't get any text
+        if not analysis_text:
+            continue
+            
+        # Process the text
         lines = analysis_text.split('\n')
         for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+                
             if any(header in line for header in ["1. Title", "2. Language", "3. Sentiment", "4. Trend", "5. Correlation"]):
                 if line not in combined_text:
                     combined_text += "\n" + line + "\n"
             else:
                 combined_text += line + "\n"
     
+    # Clean up the combined text
+    combined_text = combined_text.strip()
     combined_text = combined_text.replace("\n\n\n", "\n\n")
-    return combined_text.strip()
+    
+    # Add warning if no content was combined
+    if not combined_text:
+        logging.error("No text content was found in the analysis results")
+        return "No analysis content could be extracted from the results."
+        
+    return combined_text
