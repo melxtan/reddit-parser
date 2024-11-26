@@ -96,9 +96,9 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                         scraper = ScrapeReddit(
                             use_api=use_api,
                             log_level=log_level_map[log_level],
-                            client_id=st.secrets["REDDIT_CLIENT_ID"],
-                            client_secret=st.secrets["REDDIT_CLIENT_SECRET"],
-                            user_agent=st.secrets["REDDIT_USER_AGENT"],
+                            client_id="uLbd7l7K0bLH2zsaTpIOTw",
+                            client_secret="UOtiC3y7HAAiNyF-90fVQvDqgarVJg",
+                            user_agent="melxtan",
                         )
 
                         # Get the posts with time filter and search option
