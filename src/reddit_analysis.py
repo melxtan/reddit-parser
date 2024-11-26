@@ -78,9 +78,9 @@ class RedditAnalyzer:
                 "top_p": 0.9
             }
             
-            # Call Bedrock
+            # Call Bedrock with Claude Haiku model
             response = self.bedrock.invoke_model(
-                modelId="anthropic.claude-3-haiku-20240307",
+                modelId="anthropic.claude-3-haiku-20240307-v1:0",
                 body=json.dumps(body),
                 accept="application/json",
                 contentType="application/json"
@@ -89,10 +89,8 @@ class RedditAnalyzer:
             # Parse response
             response_body = json.loads(response['body'].read().decode())
             
-            logger.info(f"Bedrock response structure: {json.dumps(response_body, indent=2)}")
-            
             return {
-                'chunk_id': f"chunk_{time.time()}",  # Generate a unique ID for the chunk
+                'chunk_id': f"chunk_{time.time()}",
                 'analysis': response_body.get('messages', [{}])[0].get('content', 'No analysis available'),
                 'posts_analyzed': len(posts)
             }
@@ -101,7 +99,7 @@ class RedditAnalyzer:
             logger.error(f"Error in _analyze_chunk: {str(e)}")
             logger.error(f"Error type: {type(e).__name__}")
             raise
-
+            
     def analyze_posts(self, posts: List[Dict], chunk_size: int = 5) -> List[Dict]:
         """Split posts into chunks and analyze each chunk"""
         # Split posts into chunks
