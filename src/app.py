@@ -20,7 +20,7 @@ logging.basicConfig(
 if "post_data" not in st.session_state:
     st.session_state.post_data = None
 if "aws_creds" not in st.session_state:
-    st.session_state.aws_credentials = None
+    st.session_state.aws_creds = None
 
 # Password input
 password_input = st.text_input("Enter password to access the app:", type="password")
