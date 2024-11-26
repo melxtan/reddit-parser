@@ -54,6 +54,7 @@ class RedditAnalyzer:
         retry=tenacity.retry_if_exception_type(Exception),
         before_sleep=lambda retry_state: logger.info(f"Retrying after {retry_state.next_action.sleep} seconds...")
     )
+    
     def _analyze_chunk(self, posts: List[Dict]) -> Dict:
         """Analyze a chunk of Reddit posts"""
         self._rate_limit()
@@ -88,16 +89,25 @@ class RedditAnalyzer:
             
             # Parse response
             response_body = json.loads(response['body'].read().decode())
+            logger.info(f"Raw response from Bedrock: {json.dumps(response_body, indent=2)}")
+            
+            # Get the response content
+            if 'messages' in response_body and response_body['messages']:
+                analysis_content = response_body['messages'][0]['content']
+            else:
+                logger.error(f"Unexpected response structure: {response_body}")
+                analysis_content = "Error: Unexpected response structure"
             
             return {
                 'chunk_id': f"chunk_{time.time()}",
-                'analysis': response_body.get('messages', [{}])[0].get('content', 'No analysis available'),
+                'analysis': analysis_content,
                 'posts_analyzed': len(posts)
             }
             
         except Exception as e:
             logger.error(f"Error in _analyze_chunk: {str(e)}")
             logger.error(f"Error type: {type(e).__name__}")
+            logger.error(f"Full error details: {str(e.__dict__)}")
             raise
             
     def analyze_posts(self, posts: List[Dict], chunk_size: int = 5) -> List[Dict]:
