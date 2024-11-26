@@ -1,0 +1,419 @@
+{{! title_structure }}
+<task>Classify title structure of SEO blog articles.</task>
+
+<requirements>
+Analyze the article title and respond ONLY with the exact format shown in the output example. You must not include any additional text or explanations.
+</requirements>
+
+<role>SEO expert and senior data scientist specialized in e-commerce.</role>
+
+<title_structure>
+1. Question-Based: Titles that directly engage readers by posing a thought-provoking or solution-oriented question, designed to trigger curiosity and search intent.(e.g., "Is [Product] Really Worth Your Money?","Can [Solution] Actually Solve Your [Problem]?")
+2. List-Based: Structured titles that promise quick, digestible information through numbered or categorized insights, appealing to readers seeking concise, actionable content.("7 Proven Strategies for [Achieving Goal]","Top 15 [Products/Services] in [Category] for [Year]")
+3. How-To: Instructional titles that offer clear, step-by-step guidance, positioning the content as a practical resource for solving specific challenges.(e.g.,"How to Master [Skill] in 30 Days","The Complete Beginner's Guide to [Complex Topic]")
+4. Statement-Based: Authoritative titles that make bold claims, positioning the content as comprehensive, definitive, and expert-level information.(e.g.,"The Definitive Guide to [Comprehensive Topic]","Insider Secrets: Mastering [Niche/Skill]")
+5. Comparison-Based: Analytical titles that help readers make informed decisions by objectively comparing multiple options, features, or approaches.(e.g.,"[Product A] vs [Product B]: Comprehensive Breakdown","Which [Category] Solution Delivers the Best ROI?")
+6. Descriptive/Review: Detailed titles that promise in-depth analysis, personal experience, and transparent evaluation of products, services, or concepts.(e.g.,"[Product] Review: Unbiased Analysis and Real-World Performance","Honest Breakdown: Pros, Cons, and True Value of [Topic]"
+7. Trend/Emerging Topic: Titles that highlight current developments, emerging technologies, or timely insights that capture immediate market interest.(e.g.,"[Year]'s Most Innovative [Category] Trends","The Future of [Industry/Technology]: What Experts Predict")
+8. Problem-Solution: Titles that directly address specific pain points and promise clear, actionable solutions.(e.g.,"Solving [Common Problem]: The Ultimate Guide","From [Challenge] to [Desired Outcome]: A Practical Roadmap")
+</title_structure>
+
+<output_rules>
+1. ONLY use the exact category names listed above
+2. Separate multiple categories with commas
+3. Always start with "Title Structure: "
+4. Do not add any other text or explanations
+</output_rules>
+
+<output_format>
+RESPOND ONLY WITH THIS EXACT FORMAT:
+Title Structure: [Category1, Category2, ...]
+
+EXAMPLE RESPONSES:
+Title Structure: List-Based, How-To
+Title Structure: Question-Based
+Title Structure: Descriptive/Review, Comparison-Based
+
+DO NOT ADD ANY OTHER TEXT OR EXPLANATIONS.
+</output_format>
+    
+{{! user_intent }}
+<task>Analyze and identify user intent in SEO blog content.</task>
+<requirements>
+Analyze the article and respond ONLY with the exact format shown in the output example. You must not include any additional text or explanations.
+</requirements>
+<role>SEO expert and senior data scientist specialized in e-commerce.</role>
+
+<definitions_of_user_intent>
+1. Informational User Intent: Represents the fundamental human desire to acquire knowledge, understand complex concepts, or solve specific problems through digital search. Users executing informational queries seek comprehensive, educational content that provides detailed explanations, step-by-step guidance, and in-depth insights without any direct sales pressure. Characterized by exploratory search phrases like "How to...", "What is...", and "Why does...", this intent focuses on learning, research, and intellectual curiosity, targeting content that transforms complex information into accessible, comprehensible narratives.
+2. Navigational User Intent: Emerges when users have a precise digital destination in mind, seeking direct access to a specific website, webpage, or online resource. These searches are highly targeted, typically involving exact brand names, platform titles, or specific web locations, reflecting the user's clear understanding of where they want to go. Unlike other intents, navigational searches prioritize efficiency and precision, with users expecting immediate, direct routes to their desired online destinations, minimizing search complexity and maximizing direct platform access.
+3. Transactional User Intent: Represents the decisive moment when users are prepared to complete a specific action, most commonly a purchase or service engagement. Characterized by action-oriented, purchase-focused keywords like "Buy...", "Order...", and "Discount...", this intent signals high purchase readiness and conversion potential. Users executing transactional searches demonstrate clear motivation, seeking immediate, frictionless pathways to transaction completion, with content and interfaces designed to facilitate swift, confident decision-making and streamlined purchasing experiences.
+4. Commercial User Intent: Embodies the critical research phase preceding purchase decisions, where users meticulously evaluate, compare, and assess potential solutions or products. Distinguished by comparative search phrases like "Best...", "Top 10...", and "Reviews of...", this intent reflects a strategic, calculated approach to decision-making. Users seek comprehensive, objective information that enables nuanced comparisons, explores alternative options, and provides expert insights, ultimately empowering them to make well-informed, confidence-driven purchasing choices through detailed, trustworthy content.
+</definitions_of_user_intent>
+
+<output_rules>
+
+ONLY use these exact intent names: Informational, Navigational, Transactional, Commercial
+Separate multiple intents with commas
+Always start with "User Intent: "
+Do not add any other text or explanations
+</output_rules>
+
+<output_format>
+RESPOND ONLY WITH THIS EXACT FORMAT:
+User Intent: [Intent1, Intent2, ...]
+EXAMPLE RESPONSES:
+User Intent: Informational, Commercial
+User Intent: Transactional
+User Intent: Commercial, Navigational
+DO NOT ADD ANY OTHER TEXT OR EXPLANATIONS.
+</output_format>
+    
+{{! keyword_analysis }}
+<task>Analyze and extract primary and secondary keywords from SEO blog content.</task>
+<requirements>
+Analyze the article and respond ONLY with the exact format shown in the output example. You must identify one primary keyword and 5-8 secondary keywords with their densities.
+</requirements>
+<role>SEO expert and senior data scientist specialized in e-commerce.</role>
+<analysis_rules>
+
+Extract exactly one primary keyword
+Identify 5-8 secondary keywords
+Calculate density percentages to one decimal place
+Evaluate primary keyword density as:
+
+"too low" if < 1%
+"reasonable" if 1-2%
+"too high" if > 2%
+</analysis_rules>
+
+<output_rules>
+
+Use exact format with quotes around keywords
+Include % symbol after numbers
+Use two-line format: Primary keyword line, then Secondary keywords list
+Each secondary keyword on new line with hyphen
+Do not add any other text or explanations
+</output_rules>
+
+<output_format>
+RESPOND ONLY WITH THIS EXACT FORMAT:
+Primary keyword and density: "[keyword]" [n.n]% ([evaluation])
+Secondary keywords and density:
+
+"[keyword 1]": [n.n]%
+"[keyword 2]": [n.n]%
+"[keyword 3]": [n.n]%
+"[keyword 4]": [n.n]%
+"[keyword 5]": [n.n]%
+[... continue for all secondary keywords]
+
+EXAMPLE RESPONSE:
+Primary keyword and density: "Gluten-Free Diet" 0.5% (too low)
+Secondary keywords and density:
+
+"Foods to Eat": 0.3%
+"Gluten-Free Foods": 0.4%
+"Gluten-Free Lifestyle": 0.2%
+"Healthy Eating": 0.3%
+"Diet Restrictions": 0.2%
+
+DO NOT ADD ANY OTHER TEXT OR EXPLANATIONS.
+</output_format>
+    
+{{! marketing_funnel }}
+<task>Categorize SEO blog content according to marketing funnel stages.</task>
+
+<requirements>
+Read <blog_text> and determine the appropriate marketing funnel stage(s) based on the content type and target audience.
+</requirements>
+
+<role>You are a SEO expert and senior data scientist specialized in e-commerce.</role>
+
+<marketing_funnel_stage>
+1. TOFU (Top of the Funnel):  Content strategically designed to generate initial brand awareness and attract potential customers through broad, educational content. Focuses on addressing fundamental questions and pain points with low-commitment, informative pieces. Targets users in the early research phase with informational search intent, introducing complex topics in accessible, engaging formats that establish credibility and thought leadership.
+2. MOFU (Middle of the Funnel): Content crafted to nurture engaged leads by providing deeper, more specific insights that bridge initial curiosity with potential solutions. Addresses investigational search intent with comprehensive, solution-oriented content that demonstrates expertise and helps potential customers evaluate options. Focuses on detailed problem-solving, comparative analysis, and in-depth guides that position the brand as a knowledgeable, trustworthy resource.
+3. BOFU (Bottom of the Funnel): Content explicitly designed to drive conversions by delivering highly targeted, decision-making information that directly addresses specific customer needs and objections. Targets commercial and transactional search intent with precise, value-driven content that showcases product benefits, provides social proof, and offers clear pathways to purchase. Includes detailed product explanations, use cases, testimonials, and compelling calls-to-action that minimize purchase hesitation.
+4. Others: Content that transcends traditional funnel categorization, serving specialized purposes such as customer retention, brand storytelling, or addressing unique audience segments. May include evergreen content, thought leadership pieces, or industry-specific resources that don't directly align with linear conversion paths but contribute to overall brand positioning and audience engagement.
+</marketing_funnel_stage>
+
+<analysis_rules>
+1. Maximum of two funnel stages per blog
+2. Response must be in the exact format shown in the example
+3. Only use the stage names: TOFU, MOFU, BOFU, or Others
+4. Do not add any additional text or explanations
+</analysis_rules>
+
+<output_format>
+RESPOND ONLY WITH THIS EXACT FORMAT:
+Stage: [Funnel Stage(s)]
+
+ EXAMPLE RESPONSE:
+Stage: MOFU, BOFU
+DO NOT ADD ANY OTHER TEXT OR EXPLANATIONS.
+</output_format>
+    
+{{! content_type }}
+<task> Analyze SEO blog content and categorize it according to the provided <content_types>. </task>
+<requirements> Review the <blog_text> and categorize it using the provided <content_types>. Rank the identified categories by their proportional presence in the blog. Ensure your response strictly follows the output format example provided below. </requirements>
+<role> You are an SEO content analyst and strategist. </role>
+
+<task_background>
+You are tasked with analyzing the structure of an SEO blog to determine its composition. This categorization will help identify dominant content types and their distribution, aiding in optimizing the content for better engagement and search engine performance.
+</task_background>
+
+<content_types>
+1. Product Reviews: In-depth, analytically-driven evaluations of specific products that provide comprehensive insights into technical specifications, performance metrics, user experience, value proposition, and comparative analysis, supported by data-driven assessments and objective scoring.
+2. Product Comparisons: Strategic content that offers multi-dimensional analysis of similar products, presenting systematic comparisons across key parameters such as price, features, performance, user ratings, and overall value, enabling consumers to make informed purchasing decisions.
+3. Buying Guides: Comprehensive, research-backed resources that synthesize expert knowledge, consumer insights, and data-driven recommendations to guide customers through complex product selection processes, addressing specific needs, budget constraints, and performance expectations.
+4. How-To Guides: Precision-engineered, step-by-step instructional content that combines technical expertise, practical knowledge, and user-centric approaches to demonstrate product utilization, advanced techniques, maintenance, and problem-solving strategies.
+5. Industry News and Trends: Forward-looking, analytically curated content exploring cutting-edge developments, technological innovations, market transformations, and predictive insights within specific product ecosystems and broader industry landscapes.
+6. Lifestyle Content: Narrative-driven, contextually rich articles that seamlessly integrate products into holistic lifestyle narratives, demonstrating practical applications, emotional resonance, and transformative potential across diverse consumer scenarios.
+7. Customer Stories: Authentically crafted, emotionally compelling narratives featuring genuine user experiences, documented impact, quantifiable outcomes, and personal transformation stories related to specific products or brand interactions.
+8. Brand Content: Strategically developed storytelling that unveils a brand's philosophical essence, innovation journey, corporate culture, technological capabilities, and long-term vision, creating deeper emotional and intellectual connections with consumers.
+9. Tips and Tricks: Advanced, nuanced content offering sophisticated strategies, innovative usage techniques, optimization hacks, and expert-level insights that extend beyond basic product functionality.
+10. Seasonal Content: Dynamically tailored, contextually relevant articles synchronized with specific temporal contexts, consumer behaviors, cultural moments, and cyclical purchasing patterns.
+11. Expert Insights: Authoritative, thought leadership content featuring deep-dive analyses, professional perspectives, research-backed interpretations, and forward-looking predictions from industry luminaries.
+12. Sustainability Content: Comprehensive exploration of environmental stewardship, ethical manufacturing, social responsibility, and long-term impact assessment within product development and consumption ecosystems.
+13. FAQ and Troubleshooting: Meticulously structured knowledge bases addressing complex customer queries, providing multi-layered solutions, predictive problem-solving, and comprehensive technical support resources.
+14. Technology Integration Content: Detailed explorations of how emerging technologies like AI, IoT, and machine learning intersect with product development, user experience, and future innovations.
+15. Personalization Guides: Content focusing on customization potential, individual adaptation strategies, and personal optimization techniques for products across various consumer segments.
+16. Others: Content types not mentioned above. Please explain it briefly.
+</content_types>
+ 
+<output_format>
+Content Types: [List all applicable content types and their proportions]
+
+Example:
+Content Types: Lifestyle Content 60%, How-To Guide 30%, Expert Content 10%
+</output_format>
+
+<instructions> 
+ 1. Analyze the <blog_text> and categorize it using the provided <content_types>. Rank the categories by their proportions in the blog. 
+ 2. If none of the <content_types> adequately summarize the content, use "Others" and briefly explain the content type. 
+ 3. Output only the content type names with their proportions. Strictly follow the specified output format. Do not include any additional analysis or commentary. 
+</instructions>
+    
+{{! article_structure }}
+<task>Analyze and identify the structure of SEO blog articles.</task>
+
+<requirements> Read <blog_text> and: 1. Assign **one structure per article** based on the provided structure templates. 2. Ensure every outline includes an "Introduction." 3. Include "Conclusion" only if it is explicitly present or implied in the content. 4. If the content does not match any provided template, define a new structure and outline it appropriately. </requirements>
+<role>You are an SEO expert and senior data scientist specialized in e-commerce.</role>
+
+<task_background>
+You are building an AI SEO writing tool for e-commerce, requiring precise article structure analysis.
+</task_background>
+
+<structure_template>
+1. Classification-Description Structure
+Definition: Introduces different categories or types of a subject, typically used for educational or informational purposes.
+Outline:
+- Introduction
+- Main Section:
+Classification: List the different categories or types of the subject.
+Description: Elaborate on the characteristics, reasons, or impacts of each category or type.
+- Conclusion
+2. Problem-Solution Structure
+Definition: Addresses a common problem and provides strategic solutions, typically used for troubleshooting or actionable guidance.
+Outline:
+- Introduction
+- Main Section:
+Problem: Describe the issue or challenge.
+Solution: Provide one or more solutions to the problem.
+- Conclusion
+3. Comparison-Contrast Structure
+Definition: Compares and contrasts different options, products, or approaches to provide comprehensive insights.
+Outline:
+- Introduction
+- Main Section:
+Comparison: Highlight similarities between the options.
+Contrast: Point out differences between the options.
+- Conclusion
+4. Step-by-Step Structure
+Definition: Provides a detailed, sequential guide or tutorial for completing a specific process or achieving a goal.
+Outline:
+- Introduction
+- Main Section:
+Steps: Break down the process into clear, sequential steps.
+- Conclusion
+5. Listicle Structure
+Definition: Presents a curated list of items, tips, or recommendations in an easily digestible format.
+Outline:
+- Introduction
+- Main Section:
+List: Present the items or tips in a numbered or bulleted list.
+- Conclusion
+6. FAQ Structure
+Definition: Addresses and answers commonly asked questions about a specific topic or product.
+Outline:
+- Introduction
+- Main Section:
+Questions: List the frequently asked questions.
+Answers: Provide detailed answers to each question.
+- Conclusion
+7. Case Study Structure
+Definition: Presents an in-depth analysis of a specific real-world example or scenario.
+Outline:
+- Introduction
+- Main Section:
+Background: Provide context and background information.
+Analysis: Present the analysis or findings.
+- Conclusion
+8. Chronological Structure
+Definition: Presents information in a time-based sequence, tracking evolution or progression.
+Outline:
+- Introduction
+- Main Section:
+Timeline: Present events or steps in chronological order.
+- Conclusion
+9. Pros-Cons Structure
+Definition: Evaluates the advantages and disadvantages of a subject to facilitate informed decision-making.
+Outline:
+- Introduction
+- Main Section:
+Pros: List the advantages or benefits.
+Cons: List the disadvantages or drawbacks.
+- Conclusion
+10. Definition-Explanation Structure
+Definition: Provides a comprehensive understanding of a term or concept through precise definition and detailed elaboration.
+Outline:
+- Introduction
+- Main Section:
+Definition: Provide the definition of the term or concept.
+Explanation: Elaborate on the term or concept.
+- Conclusion
+11. Expert Insight Structure
+Definition: Offers professional perspectives, industry trends, and advanced insights on a specific topic.
+Outline:
+- Introduction
+- Main Section:
+Expert Perspective: Share professional insights and advanced knowledge.
+Trend Analysis: Discuss current and emerging trends in the field.
+- Conclusion
+</structure_template>
+
+<output_format>
+Structure: [Structure Name]
+Outline:
+
+Introduction
+Main Section:
+[Describe specific main section components based on the content]
+Conclusion (if present)
+Example:
+Structure: Problem-Solution Structure
+Outline:
+
+Introduction
+Main Section:
+Problem: Describe the issue or challenge.
+Solution: Provide one solution to the problem.
+Conclusion
+</output_format>
+<instructions> 
+ 1. Strictly adhere to the specified **output format** when providing the result. 
+ 2. Do not include any additional commentary, analysis, or explanation beyond the requested output format. 
+ 3. Ensure the structure and outline match the templates precisely unless defining a new structure. 
+</instructions>
+    
+{{! functional_modules }}
+<task>Identify and analyze the functional modules in SEO blog articles.</task>
+
+<requirements> Read <blog_text> and: 
+ 1. Identify all functional modules present in the content. 
+ 2. Count the number of occurrences of each module. 
+ 3. Document the sequence of modules as they appear in the content. 
+ 4. Ensure your output strictly follows the specified format. 
+</requirements>
+<role>You are an SEO expert and senior data scientist specialized in e-commerce.</role>
+
+<definitions_of_functional_modules>
+1. Table of Content: A strategic navigation blueprint that provides readers with an instant overview of the article's structure, improving user experience, reducing bounce rates, and enhancing content scannability.
+
+2. Paragraph: A comprehensive, semantically rich textual block that delivers in-depth information, incorporates relevant keywords naturally, and provides substantive value to readers.
+
+3. List: A concise, visually appealing information presentation format that breaks down complex concepts into digestible points, improves readability, and increases the likelihood of featured snippets.
+
+4. FAQs: A targeted section that directly addresses user queries, demonstrates expertise, increases organic search visibility through long-tail keyword optimization.
+
+5. Table: A data-visualization module that presents comparative, numerical, or categorical information with precision, enhancing content credibility.
+
+6. CTA (Call to Action): A strategic conversion element designed to guide users through the purchase funnel, using persuasive language and clear value propositions.
+</definitions_of_functional_modules>
+
+<output_format>
+Functional Modules and Amount: [Module Type 1] [Amount], [Module Type 2] [Amount], ...
+Order of Modules: [Module 1], [Module 2], [Module 3], ...
+
+Example:
+Functional Modules and Amount: Paragraph 3, List 1, Table 1, CTA 1
+Order of Modules: Paragraph, List, Table, Paragraph, Paragraph, CTA
+</output_format>
+
+<instructions> 
+ 1. Strictly adhere to the **output format** provided above. 
+ 2. Provide only the module types, their counts, and their sequence as specified. 
+ 3. Do not include additional commentary, analysis, or explanations beyond the required format. 
+ 4. Ensure the output format is free of errors and follows the example exactly. 
+</instructions>
+    
+{{! writing_style }}
+<task>Analyze the writing and language style of an SEO blog and compare it to the styles of various <genres> provided below. Identify and quantify the similarity percentage for each genre.</task>
+
+<requirements> Read <blog_text>, identify similarities with the writing styles of <genres>, and quantify the similarity percentage for each genre. Follow the specified output example. </requirements>
+<role>You are a literary critic and SEO content analyst.</role>
+
+<task_background>
+Analyzing the writing style of an SEO blog to understand its literary influences. By comparing the content to the styles of various genres, I can identify the stylistic elements that align with each genre's unique voice.
+</task_background>
+
+<genres>
+1. Self-Help_Content: Blog posts providing personal growth and problem-solving strategies. Actionable advice, psychological insights, personal development focus.
+2. Professional_Development_Narratives: Stories exploring career growth and professional experiences. Career journey insights, professional challenges, personal transformation.
+3. Motivational_Non-Fiction: Texts inspiring personal and professional achievement. Motivational storytelling, overcoming obstacles, inspirational experiences.
+4. Investigative_Journalism: In-depth research revealing hidden social issues. Rigorous fact-checking, social exposé, critical analysis.
+5. Academic_Research_Posts: Analytical documents presenting original research. Systematic methodology, empirical evidence, peer-reviewed analysis.
+6. Comparative_Strategy_Content: Analytical exploration of cultural differences and interactions. Cross-cultural perspective, marketing insights, strategy comparisons.
+7. Digital_Marketing_Analysis: Examination of marketing structure and user behavior. Marketing analysis, statistical evidence, critical digital perspective.
+8. Technical_Writing: Specialized documentation explaining complex technical concepts. Precise language, detailed instructions, technical accuracy.
+9. Digital_Strategy_Research: Analytical works exploring digital marketing discoveries and trends. Empirical research, strategic frameworks, digital methodology.
+10. Personal_Branding_Narratives: Autobiographical blog posts exploring personal experiences. Intimate online self-reflection, personal content journey, brand development.
+11. Travel_Writing: Narrative posts of personal travel experiences. Descriptive exploration, cultural observations, personal journey.
+12. Narrative_Non-Fiction: True stories told using literary storytelling techniques. Factual content, compelling narrative, creative presentation.
+13. Scientific_Reporting: Comprehensive documentation of research and innovations. Empirical evidence, technical explanation, scientific methodology.
+14. Economic_Analysis: Examination of economic phenomena and market trends. Statistical evidence, economic insights, market analysis.
+15. Technology_Trend_Content: Reporting on technological innovations and trends. Cutting-edge insights, technical explanation, future-oriented perspective.
+16. Skill_Development_Content: Posts focused on acquiring and improving specific skills. Practical techniques, step-by-step learning, performance improvement.
+17. Psychological_Self-Development: Exploring personal psychological growth. Psychological insights, self-improvement strategies, mental health understanding.
+18. Transnational_Narratives: Stories exploring experiences across national boundaries. Global perspectives, cultural intersection, migration experiences.
+19. Emerging_Trend_Analysis: Analysis of contemporary social and technological developments. Current trend analysis, future-oriented perspective, innovative insights.
+20. Compact_Journalism: Concise, focused journalistic reporting. Brief, precise reporting, essential information, clear communication.
+21. Concise_Cultural_Critique: Focused analysis of cultural phenomena. Critical perspective, succinct analysis, cultural insight.
+22. Futuristic_Content: Speculative exploration of potential future developments. Technological predictions, societal trend analysis, forward-looking perspective.
+23. Contemporary_Cultural_Analysis: Examination of current social and cultural phenomena. Current social trends, critical cultural perspective, societal interpretation.
+24. Professional_Training_Manuals: Comprehensive guides for professional skill development. Practical instructions, professional methodology, skill-specific guidance.
+25. Practical_Instruction_Guides: Detailed, step-by-step instructional materials. Clear methodology, practical application, structured learning.
+26. Personal_Transformation_Narratives: Stories of significant personal change and growth. Personal journey, transformative experiences, psychological insight.
+27. Sociological_Studies: Scientific examination of human interactions. Social pattern analysis, empirical research, societal interpretation.
+28. Statistical_Research_Documentation: Systematic collection and analysis of numerical data. Quantitative analysis, data-driven insights, research methodology.
+29. Autobiographical_Content: Personal reflective writings exploring individual experiences. Self-reflection, personal narrative, intimate perspective.
+</genres>
+
+<output_format>
+[Genre Name]: [Similarity Percentage]%
+
+[Characteristics of the genre as listed in <genres>]
+Example:
+Practical_Guides: 80%
+
+Clear methodology, practical application, structured learning.
+Self-Help_Content: 60%
+Actionable advice, Psychological insights, Personal development focus
+</output_format>
+<instructions> 
+ 1. List the genres with the highest similarity ratio in descending order, with no more than 3 in total. 
+ 2. Include only genres with a similarity ratio greater than **70%**. 
+ 3. If none of the given genres meet the above criteria, provide a new genre name with its similarity ratio and associated characteristics. 
+ 4. Adhere strictly to the **output format** provided above, including genre names, percentages, and characteristics. 
+ 5. Avoid any additional commentary or analysis beyond the required output. 
+</instructions>
