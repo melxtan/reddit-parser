@@ -4,10 +4,12 @@
 import io
 import json
 import logging
+import os
 
 import pandas as pd
 import streamlit as st
 from scrape_reddit import ScrapeReddit
+from reddit_analysis import analyze_reddit_data
 
 # Configure logging
 logging.basicConfig(
@@ -17,12 +19,40 @@ logging.basicConfig(
 # Initialize session state
 if "post_data" not in st.session_state:
     st.session_state.post_data = None
+if "aws_credentials" not in st.session_state:
+    st.session_state.aws_credentials = None
 
 # Password input
 password_input = st.text_input("Enter password to access the app:", type="password")
 
 # Check if the password is correct
 if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
+
+    st.subheader("AWS Credentials")
+    
+    # Only show credentials form if not already set
+    if not st.session_state.aws_credentials:
+        with st.form("aws_credentials"):
+            aws_access_key = st.text_input("AWS Access Key ID", type="password")
+            aws_secret_key = st.text_input("AWS Secret Access Key", type="password")
+            aws_region = st.text_input("AWS Region", value="us-east-1")
+            
+            if st.form_submit_button("Save AWS Credentials"):
+                if aws_access_key and aws_secret_key:
+                    st.session_state.aws_credentials = {
+                        "access_key": aws_access_key,
+                        "secret_key": aws_secret_key,
+                        "region": aws_region
+                    }
+                    st.success("AWS credentials saved!")
+                else:
+                    st.error("Please enter both AWS Access Key ID and Secret Access Key")
+                    
+    else:
+        st.success("AWS credentials are set")
+        if st.button("Clear AWS Credentials"):
+            st.session_state.aws_credentials = None
+            st.experimental_rerun()
 
     def main():
         st.title("Reddit Post Scraper")
@@ -177,6 +207,43 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                     file_name=f"{filename}.csv",
                     mime="text/csv",
                 )
+        st.subheader("Reddit Post Analysis")
+            
+            if st.session_state.aws_credentials:
+                if st.button("Analyze Posts"):
+                    with st.spinner("Analyzing posts using Claude..."):
+                        try:
+                            # Set AWS credentials from session state
+                            os.environ["AWS_ACCESS_KEY_ID"] = st.session_state.aws_credentials["access_key"]
+                            os.environ["AWS_SECRET_ACCESS_KEY"] = st.session_state.aws_credentials["secret_key"]
+                            
+                            analysis_results = analyze_reddit_data(
+                                post_data=st.session_state.post_data,
+                                region_name=st.session_state.aws_credentials["region"],
+                                max_workers=3,
+                                rate_limit_per_second=2,
+                                chunk_size=5
+                            )
+                            
+                            # Display analysis results
+                            for result in analysis_results:
+                                st.write(f"Analysis for chunk {result['chunk_id']}:")
+                                st.write(result['analysis'])
+                                st.markdown("---")
+                            
+                            # Add download button for analysis results
+                            analysis_json = json.dumps(analysis_results, indent=2)
+                            st.download_button(
+                                label="Download Analysis Results",
+                                data=analysis_json,
+                                file_name=f"{filename}_analysis.json",
+                                mime="application/json"
+                            )
+                            
+                        except Exception as e:
+                            st.error(f"Analysis failed: {str(e)}")
+            else:
+                st.warning("Please set your AWS credentials above to enable post analysis")
 
     if __name__ == "__main__":
         main()
