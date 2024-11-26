@@ -11,7 +11,7 @@ import tenacity
 logger = logging.getLogger(__name__)
 
 class RedditAnalyzer:
-    def __init__(self, region_name="us-east-1", max_workers=5, rate_limit_per_second=2):
+    def __init__(self, region_name="us-west-2", max_workers=5, rate_limit_per_second=2):
         config = Config(
             region_name=region_name,
             retries=dict(
