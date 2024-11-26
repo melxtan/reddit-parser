@@ -52,7 +52,7 @@ class RedditAnalyzer:
         prompt = {
             "prompt": "\n\nHuman: Please analyze this Reddit data according to the following protocol:\n\n" + 
                      json.dumps(chunk) + "\n\n" +
-                     "Protocol:\n" + open("prompt.hbs").read() + "\n\nAssistant: ",
+                     "Protocol:\n" + open("prompts.hbs").read() + "\n\nAssistant: ",
             "max_tokens": 4096,
             "temperature": 0.7,
             "top_p": 0.9,
