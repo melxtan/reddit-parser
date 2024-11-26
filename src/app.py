@@ -210,37 +210,51 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
         st.subheader("Reddit Post Analysis")
             
         if st.session_state.aws_credentials:
-            if st.button("Analyze Posts"):
-                with st.spinner("Analyzing posts using Claude..."):
-                    try:
-                        # Set AWS credentials from session state
-                        os.environ["AWS_ACCESS_KEY_ID"] = st.session_state.aws_credentials["access_key"]
-                        os.environ["AWS_SECRET_ACCESS_KEY"] = st.session_state.aws_credentials["secret_key"]
-                            
-                        analysis_results = analyze_reddit_data(
-                            post_data=st.session_state.post_data,
-                            region_name=st.session_state.aws_credentials["region"],
-                            max_workers=3,
-                            rate_limit_per_second=2,
-                            chunk_size=5
-                        )
-                            
-                        for result in analysis_results:
-                            st.write(f"Analysis for chunk {result['chunk_id']}:")
-                            st.write(result['analysis'])
-                            st.markdown("---")
-                            
-                        # Add download button for analysis results
-                        analysis_json = json.dumps(analysis_results, indent=2)
-                        st.download_button(
-                            label="Download Analysis Results",
-                            data=analysis_json,
-                            file_name=f"{filename}_analysis.json",
-                            mime="application/json"
-                        )
-                            
-                    except Exception as e:
-                        st.error(f"Analysis failed: {str(e)}")
+                analyze_button = st.button("Analyze Posts", key="analyze_button")
+                if analyze_button:
+                    if st.session_state.post_data:  # Double-check we have data to analyze
+                        with st.spinner("Analyzing posts using Claude..."):
+                            try:
+                                # Set AWS credentials from session state
+                                os.environ["AWS_ACCESS_KEY_ID"] = st.session_state.aws_credentials["access_key"]
+                                os.environ["AWS_SECRET_ACCESS_KEY"] = st.session_state.aws_credentials["secret_key"]
+                                
+                                st.info("Starting analysis...")
+                                
+                                analysis_results = analyze_reddit_data(
+                                    post_data=st.session_state.post_data,
+                                    region_name=st.session_state.aws_credentials["region"],
+                                    max_workers=3,
+                                    rate_limit_per_second=2,
+                                    chunk_size=5
+                                )
+                                
+                                if analysis_results:
+                                    st.success("Analysis completed successfully!")
+                                    for i, result in enumerate(analysis_results, 1):
+                                        with st.expander(f"Analysis Result {i}"):
+                                            st.write(f"Analysis for chunk {result.get('chunk_id', i)}:")
+                                            st.write(result.get('analysis', 'No analysis available'))
+                                    
+                                    # Add download button for analysis results
+                                    analysis_json = json.dumps(analysis_results, indent=2)
+                                    st.download_button(
+                                        label="Download Analysis Results",
+                                        data=analysis_json,
+                                        file_name=f"{filename}_analysis.json",
+                                        mime="application/json",
+                                        key="download_analysis"
+                                    )
+                                else:
+                                    st.warning("No analysis results were returned")
+                                    
+                            except Exception as e:
+                                st.error(f"Analysis failed: {str(e)}")
+                                st.error(f"Error type: {type(e).__name__}")
+                                st.error(f"Error details: {e.args}")
+                                logging.exception("An error occurred during analysis:")
+                    else:
+                        st.error("No post data available to analyze. Please scrape some posts first.")
             else:
                 st.warning("Please set your AWS credentials above to enable post analysis")
 
