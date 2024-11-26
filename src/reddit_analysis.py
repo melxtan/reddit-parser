@@ -15,7 +15,7 @@ class RedditAnalyzer:
         config = Config(
             region_name=region_name,
             retries=dict(
-                max_attempts=10,
+                max_attempts=5,
                 mode="adaptive"
             )
         )
@@ -45,7 +45,7 @@ class RedditAnalyzer:
         current_time = time.time()
         time_since_last_request = current_time - self._last_request_time
         if time_since_last_request < (1 / self.rate_limit_per_second):
-            time.sleep((1 / self.rate_limit_per_second) - time_since_last_request)
+            time.sleep((1 / self.rate_limit_per_second) - time_since_last_request + 1)
         self._last_request_time = time.time()
 
     @tenacity.retry(
