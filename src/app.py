@@ -209,21 +209,21 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                 )
         st.subheader("Reddit Post Analysis")
             
-            if st.session_state.aws_credentials:
-                if st.button("Analyze Posts"):
-                    with st.spinner("Analyzing posts using Claude..."):
-                        try:
-                            # Set AWS credentials from session state
-                            os.environ["AWS_ACCESS_KEY_ID"] = st.session_state.aws_credentials["access_key"]
-                            os.environ["AWS_SECRET_ACCESS_KEY"] = st.session_state.aws_credentials["secret_key"]
+        if st.session_state.aws_credentials:
+            if st.button("Analyze Posts"):
+                with st.spinner("Analyzing posts using Claude..."):
+                    try:
+                        # Set AWS credentials from session state
+                        os.environ["AWS_ACCESS_KEY_ID"] = st.session_state.aws_credentials["access_key"]
+                        os.environ["AWS_SECRET_ACCESS_KEY"] = st.session_state.aws_credentials["secret_key"]
                             
-                            analysis_results = analyze_reddit_data(
-                                post_data=st.session_state.post_data,
-                                region_name=st.session_state.aws_credentials["region"],
-                                max_workers=3,
-                                rate_limit_per_second=2,
-                                chunk_size=5
-                            )
+                        analysis_results = analyze_reddit_data(
+                            post_data=st.session_state.post_data,
+                            region_name=st.session_state.aws_credentials["region"],
+                            max_workers=3,
+                            rate_limit_per_second=2,
+                            chunk_size=5
+                        )
                             
                             # Display analysis results
                             for result in analysis_results:
