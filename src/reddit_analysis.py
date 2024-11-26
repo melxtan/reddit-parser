@@ -60,26 +60,24 @@ class RedditAnalyzer:
         self._rate_limit()
         
         try:
-            # Get the subreddit from the first post in the chunk, or use a default
+            # Get the subreddit from the first post in the chunk
             search_query = posts[0].get('subreddit', '') if posts else ''
             
-            prompt_content = self.template.format(search_query=search_query)
-            
-            # Prepare request body for Bedrock
             body = {
                 "anthropic_version": "bedrock-2023-05-31",
                 "max_tokens": 4096,
                 "messages": [
                     {
                         "role": "user",
-                        "content": f"Please analyze this Reddit data according to the following protocol:\n\n{json.dumps(posts, indent=2)}\n\nProtocol:\n{prompt_content}"
+                        "content": f"Please analyze this Reddit data according to the following protocol:\n\n{json.dumps(posts, indent=2)}\n\nProtocol:\n{self.template}"
                     }
                 ],
                 "temperature": 0.7,
-                "top_p": 0.9
+                "top_k": 250,
+                "top_p": 0.999,
+                "stop_sequences": []
             }
             
-            # Call Bedrock with Claude Haiku model
             response = self.bedrock.invoke_model(
                 modelId="anthropic.claude-3-haiku-20240307-v1:0",
                 body=json.dumps(body),
@@ -87,27 +85,18 @@ class RedditAnalyzer:
                 contentType="application/json"
             )
             
-            # Parse response
             response_body = json.loads(response['body'].read().decode())
-            logger.info(f"Raw response from Bedrock: {json.dumps(response_body, indent=2)}")
-            
-            # Get the response content
-            if 'messages' in response_body and response_body['messages']:
-                analysis_content = response_body['messages'][0]['content']
-            else:
-                logger.error(f"Unexpected response structure: {response_body}")
-                analysis_content = "Error: Unexpected response structure"
+            logger.info(f"Response structure: {json.dumps(response_body, indent=2)}")
             
             return {
                 'chunk_id': f"chunk_{time.time()}",
-                'analysis': analysis_content,
+                'analysis': response_body['content'] if isinstance(response_body, dict) and 'content' in response_body else response_body['messages'][0]['content'],
                 'posts_analyzed': len(posts)
             }
             
         except Exception as e:
             logger.error(f"Error in _analyze_chunk: {str(e)}")
             logger.error(f"Error type: {type(e).__name__}")
-            logger.error(f"Full error details: {str(e.__dict__)}")
             raise
             
     def analyze_posts(self, posts: List[Dict], chunk_size: int = 5) -> List[Dict]:
