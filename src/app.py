@@ -225,23 +225,22 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                             chunk_size=5
                         )
                             
-                            # Display analysis results
-                            for result in analysis_results:
-                                st.write(f"Analysis for chunk {result['chunk_id']}:")
-                                st.write(result['analysis'])
-                                st.markdown("---")
+                        for result in analysis_results:
+                            st.write(f"Analysis for chunk {result['chunk_id']}:")
+                            st.write(result['analysis'])
+                            st.markdown("---")
                             
-                            # Add download button for analysis results
-                            analysis_json = json.dumps(analysis_results, indent=2)
-                            st.download_button(
-                                label="Download Analysis Results",
-                                data=analysis_json,
-                                file_name=f"{filename}_analysis.json",
-                                mime="application/json"
-                            )
+                        # Add download button for analysis results
+                        analysis_json = json.dumps(analysis_results, indent=2)
+                        st.download_button(
+                            label="Download Analysis Results",
+                            data=analysis_json,
+                            file_name=f"{filename}_analysis.json",
+                            mime="application/json"
+                        )
                             
-                        except Exception as e:
-                            st.error(f"Analysis failed: {str(e)}")
+                    except Exception as e:
+                        st.error(f"Analysis failed: {str(e)}")
             else:
                 st.warning("Please set your AWS credentials above to enable post analysis")
 
