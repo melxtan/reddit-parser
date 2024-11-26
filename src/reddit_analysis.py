@@ -2,7 +2,7 @@ import json
 import logging
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Dict
+from typing import List, Dict, Union
 import boto3
 from botocore.config import Config
 import tenacity
@@ -137,7 +137,7 @@ def analyze_reddit_data(post_data: List[Dict],
     
     return analyzer.analyze_posts(post_data, chunk_size)
 
-def combine_analyses(results: List[Dict]) -> Dict[str, Any]:
+def combine_analyses(results: List[Dict]) -> Dict[str, Union[str, List[Dict], Dict]]:
     """Combine multiple chunk analyses into one coherent analysis."""
     combined_text = ""
     individual_chunks = []
