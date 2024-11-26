@@ -35,7 +35,7 @@ class RedditAnalyzer:
     def _load_prompt_template(self):
         """Load the prompt template from current directory"""
         try:
-            with open('prompts.txt', 'r', encoding='utf-8') as file:
+            with open('paste.txt', 'r', encoding='utf-8') as file:
                 return file.read()
         except Exception as e:
             logger.error(f"Error loading template: {str(e)}")
@@ -64,29 +64,42 @@ class RedditAnalyzer:
             
             prompt_content = self.template.format(search_query=search_query)
             
-            prompt = {
-                "prompt": "\n\nHuman: Please analyze this Reddit data according to the following protocol:\n\n" + 
-                         json.dumps(posts, indent=2) + "\n\n" +
-                         "Protocol:\n" + prompt_content + "\n\nAssistant: ",
+            # Prepare request body for Bedrock
+            body = {
+                "anthropic_version": "bedrock-2023-05-31",
                 "max_tokens": 4096,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": f"Please analyze this Reddit data according to the following protocol:\n\n{json.dumps(posts, indent=2)}\n\nProtocol:\n{prompt_content}"
+                    }
+                ],
                 "temperature": 0.7,
-                "top_p": 0.9,
+                "top_p": 0.9
             }
             
+            # Call Bedrock
             response = self.bedrock.invoke_model(
                 modelId="anthropic.claude-3-haiku-20240307",
-                body=json.dumps(prompt)
+                body=json.dumps(body),
+                accept="application/json",
+                contentType="application/json"
             )
             
-            response_body = json.loads(response.get('body').read())
+            # Parse response
+            response_body = json.loads(response['body'].read().decode())
+            
+            logger.info(f"Bedrock response structure: {json.dumps(response_body, indent=2)}")
+            
             return {
                 'chunk_id': f"chunk_{time.time()}",  # Generate a unique ID for the chunk
-                'analysis': response_body.get('completion'),
+                'analysis': response_body.get('messages', [{}])[0].get('content', 'No analysis available'),
                 'posts_analyzed': len(posts)
             }
             
         except Exception as e:
             logger.error(f"Error in _analyze_chunk: {str(e)}")
+            logger.error(f"Error type: {type(e).__name__}")
             raise
 
     def analyze_posts(self, posts: List[Dict], chunk_size: int = 5) -> List[Dict]:
