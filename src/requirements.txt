@@ -1,7 +1,0 @@
-streamlit
-pandas
-requests
-anthropic
-numpy
-boto3
-tenacity
