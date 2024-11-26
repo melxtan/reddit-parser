@@ -9,7 +9,7 @@ import os
 import pandas as pd
 import streamlit as st
 from scrape_reddit import ScrapeReddit
-from reddit_analysis import analyze_reddit_data, combine analyses
+from reddit_analysis import analyze_reddit_data, combine_analyses
 
 # Configure logging
 logging.basicConfig(
