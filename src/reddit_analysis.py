@@ -35,7 +35,7 @@ class RedditAnalyzer:
     def _load_prompt_template(self):
         """Load the prompt template from current directory"""
         try:
-            with open('paste.txt', 'r', encoding='utf-8') as file:
+            with open('prompts.txt', 'r', encoding='utf-8') as file:
                 return file.read()
         except Exception as e:
             logger.error(f"Error loading template: {str(e)}")
