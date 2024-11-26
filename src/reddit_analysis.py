@@ -7,7 +7,6 @@ from typing import List, Dict
 import boto3
 from botocore.config import Config
 import tenacity
-from pybars import Compiler
 
 # Configure logging
 logger = logging.getLogger(__name__)
