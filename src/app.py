@@ -15,8 +15,6 @@ if "post_data" not in st.session_state:
     st.session_state.post_data = None
 if "aws_creds" not in st.session_state:
     st.session_state.aws_creds = None
-if "analysis_results" not in st.session_state:
-    st.session_state.analysis_results = None
 
 password_input = st.text_input("Enter password to access the app:", type="password")
 
@@ -124,8 +122,6 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
 
                         scraper.destroy()
                         st.session_state.post_data = post_data
-                        # Clear previous analysis results when new data is scraped
-                        st.session_state.analysis_results = None
                     except Exception as e:
                         st.error(f"An error occurred: {str(e)}")
                         st.error(f"Error type: {type(e).__name__}")
@@ -148,6 +144,7 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
             st.dataframe(df)
 
             col1, col2 = st.columns(2)
+            
             safe_query = search_query.replace(" ", "_").lower()[:30]
             filename = f"reddit_{safe_query}_{search_option}_{time_filter}"
 
@@ -158,7 +155,6 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                     data=json_str,
                     file_name=f"{filename}.json",
                     mime="application/json",
-                    key="raw_json"
                 )
 
             with col2:
@@ -170,7 +166,6 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                     data=csv_str,
                     file_name=f"{filename}.csv",
                     mime="text/csv",
-                    key="raw_csv"
                 )
 
             st.subheader("Reddit Post Analysis")
@@ -196,20 +191,6 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                                 st.success("Analysis completed!")
                                 combined_analysis = combine_analyses(analysis_results)
                                 
-                                # Store in session state
-                                st.session_state.analysis_results = {
-                                    "combined": combined_analysis,
-                                    "full_data": {
-                                        "combined_analysis": combined_analysis,
-                                        "individual_chunks": analysis_results,
-                                        "metadata": {
-                                            "total_posts_analyzed": sum(r.get('posts_analyzed', 0) for r in analysis_results),
-                                            "analysis_timestamp": datetime.now().isoformat(),
-                                            "number_of_chunks": len(analysis_results)
-                                        }
-                                    }
-                                }
-                                
                                 sections = combined_analysis.split("\n\n")
                                 for section in sections:
                                     if section.strip():
@@ -218,35 +199,43 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                                                 st.write("\n".join(section.split('\n')[1:]))
                                         else:
                                             st.write(section)
+                                
+                                download_data = {
+                                    "combined_analysis": combined_analysis,
+                                    "individual_chunks": analysis_results,
+                                    "metadata": {
+                                        "total_posts_analyzed": sum(r.get('posts_analyzed', 0) for r in analysis_results),
+                                        "analysis_timestamp": datetime.now().isoformat(),
+                                        "number_of_chunks": len(analysis_results)
+                                    }
+                                }
+                                
+                                st.subheader("Download Analysis Results")
+                                col1, col2 = st.columns(2)
+                                
+                                with col1:
+                                    analysis_json = json.dumps(download_data, indent=2)
+                                    st.download_button(
+                                        label="Download Full Analysis (JSON)",
+                                        data=analysis_json,
+                                        file_name=f"{filename}_analysis_full.json",
+                                        mime="application/json",
+                                        key="json_analysis"
+                                    )
+                                
+                                with col2:
+                                    json_str = json.dumps(post_data, indent=2)
+                                    st.download_button(
+                                        label="Download JSON",
+                                        data=json_str,
+                                        file_name=f"{filename}.json",
+                                        mime="application/json",
+                                    )
                             else:
                                 st.warning("No analysis results were returned")
                         except Exception as e:
                             st.error(f"Analysis failed: {str(e)}")
                             logging.exception("Analysis error:")
-                            
-                # Show download buttons if analysis results exist
-                if st.session_state.analysis_results:
-                    st.subheader("Download Analysis Results")
-                    download_col1, download_col2 = st.columns(2)
-                    
-                    with download_col1:
-                        st.download_button(
-                            label="Download Combined Analysis (TXT)",
-                            data=st.session_state.analysis_results["combined"],
-                            file_name=f"{filename}_analysis.txt",
-                            mime="text/plain",
-                            key="txt_analysis"
-                        )
-                    
-                    with download_col2:
-                        analysis_json = json.dumps(st.session_state.analysis_results["full_data"], indent=2)
-                        st.download_button(
-                            label="Download Full Analysis (JSON)",
-                            data=analysis_json,
-                            file_name=f"{filename}_analysis_full.json",
-                            mime="application/json",
-                            key="json_analysis"
-                        )
             else:
                 st.warning("Please set your AWS credentials above to enable post analysis")
 
