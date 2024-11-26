@@ -19,7 +19,7 @@ logging.basicConfig(
 # Initialize session state
 if "post_data" not in st.session_state:
     st.session_state.post_data = None
-if "aws_credentials" not in st.session_state:
+if "aws_creds" not in st.session_state:
     st.session_state.aws_credentials = None
 
 # Password input
@@ -31,11 +31,11 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
     st.subheader("AWS Credentials")
     
     # Only show credentials form if not already set
-    if not st.session_state.aws_credentials:
-        with st.form("aws_credentials"):
+    if not st.session_state.aws_creds:
+        with st.form("aws_creds_form"):
             aws_access_key = st.text_input("AWS Access Key ID", type="password")
             aws_secret_key = st.text_input("AWS Secret Access Key", type="password")
-            aws_region = st.text_input("AWS Region", value="us-east-1")
+            aws_region = st.text_input("AWS Region", value="us-west-2")
             
             if st.form_submit_button("Save AWS Credentials"):
                 if aws_access_key and aws_secret_key:
@@ -50,7 +50,7 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                     
     else:
         st.success("AWS credentials are set")
-        if st.button("Clear AWS Credentials"):
+        if st.button("Clear AWS Credentials", key="clear_creds"):
             st.session_state.aws_credentials = None
             st.experimental_rerun()
 
