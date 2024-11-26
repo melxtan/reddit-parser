@@ -209,26 +209,27 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                                     }
                                 }
                                 
-                                download_container = st.container()
-                                with download_container:
-                                    col1, col2 = st.columns(2)
-                                    with col1:
-                                        txt_download = st.download_button(
-                                            label="Download Combined Analysis (TXT)",
-                                            data=combined_analysis,
-                                            file_name=f"{filename}_analysis.txt",
-                                            mime="text/plain",
-                                            key="download_txt"
-                                        )
-                                    
-                                    with col2:
-                                        json_download = st.download_button(
-                                            label="Download Full Analysis (JSON)",
-                                            data=json.dumps(download_data, indent=2),
-                                            file_name=f"{filename}_analysis_full.json",
-                                            mime="application/json",
-                                            key="download_analysis"
-                                        )
+                                st.subheader("Download Analysis Results")
+                                col1, col2 = st.columns(2)
+                                
+                                with col1:
+                                    st.download_button(
+                                        label="Download Combined Analysis (TXT)",
+                                        data=combined_analysis,
+                                        file_name=f"{filename}_analysis.txt",
+                                        mime="text/plain",
+                                        key="txt_analysis"
+                                    )
+                                
+                                with col2:
+                                    analysis_json = json.dumps(download_data, indent=2)
+                                    st.download_button(
+                                        label="Download Full Analysis (JSON)",
+                                        data=analysis_json,
+                                        file_name=f"{filename}_analysis_full.json",
+                                        mime="application/json",
+                                        key="json_analysis"
+                                    )
                             else:
                                 st.warning("No analysis results were returned")
                         except Exception as e:
