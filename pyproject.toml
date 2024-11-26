@@ -8,7 +8,6 @@ version = "0.1.0"
 description = "A Streamlit app for scraping Reddit posts based on search queries"
 authors = ["Melissa Tan <melissaxiaotan@gmail.com>, Cheng Yang <cheng@themoonwatcher.com>"]
 license = "MIT"
-readme = "README.md"
 packages = [{include = "src"}]
 
 [tool.poetry.dependencies]
