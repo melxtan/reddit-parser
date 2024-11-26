@@ -1,11 +1,13 @@
 import json
 import logging
 import time
+import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Dict
 import boto3
 from botocore.config import Config
 import tenacity
+from pybars import Compiler
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -29,6 +31,46 @@ class RedditAnalyzer:
         self.max_workers = max_workers
         self.rate_limit_per_second = rate_limit_per_second
         self._last_request_time = 0
+        
+        # Load template during initialization
+        self.template = self._load_prompt_template()
+
+    def _load_prompt_template(self):
+        """Load and compile the Handlebars template"""
+        try:
+            # Try multiple possible locations for the template
+            possible_paths = [
+                'prompt.hbs',  # Current directory
+                os.path.join(os.path.dirname(__file__), 'prompt.hbs'),  # Same directory as script
+                os.path.join(os.path.dirname(__file__), '..', 'prompt.hbs'),  # Parent directory
+                os.path.join('src', 'prompt.hbs'),  # src directory
+            ]
+            
+            template_content = None
+            template_path = None
+            
+            for path in possible_paths:
+                try:
+                    if os.path.exists(path):
+                        with open(path, 'r', encoding='utf-8') as file:
+                            template_content = file.read()
+                            template_path = path
+                            logger.info(f"Found template at: {path}")
+                            break
+                except Exception as e:
+                    logger.debug(f"Couldn't load template from {path}: {str(e)}")
+            
+            if template_content is None:
+                raise FileNotFoundError(
+                    f"Could not find prompt.hbs in any of these locations: {', '.join(possible_paths)}"
+                )
+            
+            compiler = Compiler()
+            return compiler.compile(template_content)
+            
+        except Exception as e:
+            logger.error(f"Error loading template: {str(e)}")
+            raise
 
     def _rate_limit(self):
         """Implement rate limiting"""
@@ -48,41 +90,44 @@ class RedditAnalyzer:
         """Analyze a single chunk of Reddit data using Claude"""
         self._rate_limit()
         
-        # Prepare the prompt
-        prompt = {
-            "prompt": "\n\nHuman: Please analyze this Reddit data according to the following protocol:\n\n" + 
-                     json.dumps(chunk) + "\n\n" +
-                     "Protocol:\n" + open("prompts.hbs").read() + "\n\nAssistant: ",
-            "max_tokens": 4096,
-            "temperature": 0.7,
-            "top_p": 0.9,
-        }
-        
-        # Call Bedrock
-        response = self.bedrock.invoke_model(
-            modelId="anthropic.claude-3-haiku-20240307",
-            body=json.dumps(prompt)
-        )
-        
-        # Parse response
-        response_body = json.loads(response.get('body').read())
-        return {
-            'chunk_id': chunk.get('id'),
-            'analysis': response_body.get('completion')
-        }
+        try:
+            # Prepare context for template
+            context = {
+                'search_query': chunk.get('subreddit', ''),  # or another relevant field
+                'data': json.dumps(chunk, indent=2)
+            }
+            
+            # Render the template
+            prompt_content = self.template(context)
+            
+            # Prepare the prompt
+            prompt = {
+                "prompt": "\n\nHuman: Please analyze this Reddit data according to the following protocol:\n\n" + 
+                         prompt_content + "\n\nAssistant: ",
+                "max_tokens": 4096,
+                "temperature": 0.7,
+                "top_p": 0.9,
+            }
+            
+            # Call Bedrock
+            response = self.bedrock.invoke_model(
+                modelId="anthropic.claude-3-haiku-20240307",
+                body=json.dumps(prompt)
+            )
+            
+            # Parse response
+            response_body = json.loads(response.get('body').read())
+            return {
+                'chunk_id': chunk.get('id'),
+                'analysis': response_body.get('completion')
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in _analyze_chunk: {str(e)}")
+            raise
 
     def analyze_posts(self, posts: List[Dict], chunk_size: int = 5) -> List[Dict]:
-        """
-        Analyze Reddit posts in chunks using Claude through Amazon Bedrock
-        
-        Args:
-            posts: List of Reddit post dictionaries
-            chunk_size: Number of posts to analyze in each chunk
-            
-        Returns:
-            List of analysis results
-        """
-        # Split posts into chunks
+        """Analyze Reddit posts in chunks using Claude through Amazon Bedrock"""
         chunks = [posts[i:i + chunk_size] for i in range(0, len(posts), chunk_size)]
         results = []
         
@@ -110,19 +155,7 @@ def analyze_reddit_data(post_data: List[Dict],
                        max_workers: int = 5,
                        rate_limit_per_second: int = 2,
                        chunk_size: int = 5) -> List[Dict]:
-    """
-    Main function to analyze Reddit data
-    
-    Args:
-        post_data: List of Reddit post dictionaries
-        region_name: AWS region name
-        max_workers: Maximum number of concurrent workers
-        rate_limit_per_second: Maximum number of requests per second
-        chunk_size: Number of posts to analyze in each chunk
-        
-    Returns:
-        List of analysis results
-    """
+    """Main function to analyze Reddit data"""
     analyzer = RedditAnalyzer(
         region_name=region_name,
         max_workers=max_workers,
