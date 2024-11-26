@@ -221,9 +221,9 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                             analysis_results = analyze_reddit_data(
                                 post_data=st.session_state.post_data,
                                 region_name=st.session_state.aws_credentials["region"],
-                                max_workers=3,
-                                rate_limit_per_second=2,
-                                chunk_size=5
+                                max_workers=2,
+                                rate_limit_per_second=0.5,
+                                chunk_size=3
                             )
                             
                             for i, result in enumerate(analysis_results, 1):
