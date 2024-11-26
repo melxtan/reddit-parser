@@ -128,7 +128,7 @@ def analyze_reddit_data(post_data: List[Dict],
                        region_name: str = "us-west-2",
                        max_workers: int = 5,
                        rate_limit_per_second: int = 2,
-                       chunk_size: int = 3) -> List[Dict]:
+                       chunk_size: int = 5) -> List[Dict]:
     analyzer = RedditAnalyzer(
         region_name=region_name,
         max_workers=max_workers,
