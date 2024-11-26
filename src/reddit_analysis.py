@@ -138,10 +138,9 @@ def analyze_reddit_data(post_data: List[Dict],
     
     return analyzer.analyze_posts(post_data, chunk_size)
 
-def combine_analyses(results: List[Dict]) -> Dict[str, Union[str, List[Dict], Dict]]:
+def combine_analyses(results: List[Dict]) -> str:
     """Combine multiple chunk analyses into one coherent analysis."""
     combined_text = ""
-    individual_chunks = []
 
     for result in results:
         if not result:
@@ -174,18 +173,13 @@ def combine_analyses(results: List[Dict]) -> Dict[str, Union[str, List[Dict], Di
             logging.warning(f"No text found in analysis: {analysis}")
             continue
 
-        individual_chunks.append(result)
         combined_text += process_analysis_text(analysis_text)
 
-    return {
-        "combined_analysis": combined_text.strip(),
-        "individual_chunks": individual_chunks,
-        "metadata": {
-            "total_posts_analyzed": sum(r.get("posts_analyzed", 0) for r in individual_chunks),
-            "analysis_timestamp": datetime.now().isoformat(),
-            "number_of_chunks": len(individual_chunks)
-        }
-    }
+    if not combined_text.strip():
+        logging.error("No text content was found in the analysis results.")
+        return "No analysis content could be extracted from the results."
+
+    return combined_text.strip()
 
 def process_analysis_text(analysis_text: str) -> str:
     """Process and clean individual analysis text."""
@@ -203,4 +197,3 @@ def process_analysis_text(analysis_text: str) -> str:
             combined_text += line + "\n"
 
     return combined_text
-
