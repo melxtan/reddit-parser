@@ -9,7 +9,7 @@ import os
 import pandas as pd
 import streamlit as st
 from scrape_reddit import ScrapeReddit
-from reddit_analysis import analyze_reddit_data
+from reddit_analysis import analyze_reddit_data, combine analyses
 
 # Configure logging
 logging.basicConfig(
@@ -209,44 +209,83 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
             # Analysis section
             st.subheader("Reddit Post Analysis")
             
-            if st.session_state.aws_credentials:
+            if st.session_state.aws_creds:
                 analyze_button = st.button("Analyze Posts", key="analyze_button")
                 if analyze_button:
                     with st.spinner("Analyzing posts using Claude..."):
                         try:
                             # Set AWS credentials from session state
-                            os.environ["AWS_ACCESS_KEY_ID"] = st.session_state.aws_credentials["access_key"]
-                            os.environ["AWS_SECRET_ACCESS_KEY"] = st.session_state.aws_credentials["secret_key"]
+                            os.environ["AWS_ACCESS_KEY_ID"] = st.session_state.aws_creds["access_key"]
+                            os.environ["AWS_SECRET_ACCESS_KEY"] = st.session_state.aws_creds["secret_key"]
+                            
+                            st.info("Starting analysis...")
                             
                             analysis_results = analyze_reddit_data(
                                 post_data=st.session_state.post_data,
-                                region_name=st.session_state.aws_credentials["region"],
+                                region_name=st.session_state.aws_creds["region"],
                                 max_workers=2,
                                 rate_limit_per_second=0.5,
                                 chunk_size=3
                             )
                             
-                            for i, result in enumerate(analysis_results, 1):
-                                with st.expander(f"Analysis Result {i}"):
-                                    st.write(f"Analysis for chunk {result.get('chunk_id', i)}:")
-                                    st.write(result.get('analysis', 'No analysis available'))
-                            
-                            # Add download button for analysis results
-                            analysis_json = json.dumps(analysis_results, indent=2)
-                            st.download_button(
-                                label="Download Analysis Results",
-                                data=analysis_json,
-                                file_name=f"{filename}_analysis.json",
-                                mime="application/json",
-                                key="download_analysis"
-                            )
-                            
+                            if analysis_results:
+                                st.success("Analysis completed!")
+                                
+                                # Combine all analyses
+                                combined_analysis = combine_analyses(analysis_results)
+                                
+                                # Show sections in expandable containers
+                                sections = combined_analysis.split("\n\n")
+                                for i, section in enumerate(sections, 1):
+                                    if section.strip():
+                                        # Check if section starts with a number (like "1.", "2.", etc)
+                                        if section.strip()[0].isdigit():
+                                            with st.expander(section.split('\n')[0]):
+                                                # Show rest of the section content
+                                                st.write("\n".join(section.split('\n')[1:]))
+                                        else:
+                                            st.write(section)
+                                
+                                # Create combined results for download
+                                download_data = {
+                                    "combined_analysis": combined_analysis,
+                                    "individual_chunks": analysis_results,
+                                    "metadata": {
+                                        "total_posts_analyzed": sum(r.get('posts_analyzed', 0) for r in analysis_results),
+                                        "analysis_timestamp": datetime.now().isoformat(),
+                                        "number_of_chunks": len(analysis_results)
+                                    }
+                                }
+                                
+                                # Add download buttons
+                                col1, col2 = st.columns(2)
+                                with col1:
+                                    # Download combined analysis as text
+                                    st.download_button(
+                                        label="Download Combined Analysis (TXT)",
+                                        data=combined_analysis,
+                                        file_name=f"{filename}_analysis.txt",
+                                        mime="text/plain",
+                                    )
+                                
+                                with col2:
+                                    # Download full results as JSON
+                                    st.download_button(
+                                        label="Download Full Analysis (JSON)",
+                                        data=json.dumps(download_data, indent=2),
+                                        file_name=f"{filename}_analysis_full.json",
+                                        mime="application/json",
+                                        key="download_analysis"
+                                    )
+                                
+                            else:
+                                st.warning("No analysis results were returned")
+                                
                         except Exception as e:
                             st.error(f"Analysis failed: {str(e)}")
-                            st.error(f"Error type: {type(e).__name__}")
-                            st.error(f"Error details: {e.args}")
-            else:
-                st.warning("Please set your AWS credentials above to enable post analysis")
+                            logging.exception("Analysis error:")
+else:
+    st.warning("Please set your AWS credentials above to enable post analysis")
 
     if __name__ == "__main__":
         main()
