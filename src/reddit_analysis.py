@@ -104,7 +104,7 @@ class RedditAnalyzer:
                 
                 # Extract relevant sections using regex
                 for section in sections:
-                    pattern = f"{section}.*?(?=\n\n|\Z)"
+                    pattern = fr"{section}.*?(?=\n\n|$)"
                     matches = re.findall(pattern, result, re.DOTALL)
                     if matches:
                         # Convert matches[0] to string if it's a list
@@ -199,7 +199,7 @@ class RedditAnalyzer:
                 logger.debug(f"Prompt length for {task_name}: {len(prompt)} characters")
                 
                 body = {
-                    "anthropic_version": "bedrock-2023-05-31",
+                    "anthropic_version": "bedrock-2024-02-01",
                     "max_tokens": 4096,
                     "messages": [
                         {
