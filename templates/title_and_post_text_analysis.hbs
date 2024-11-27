@@ -1,0 +1,22 @@
+{{> base
+    role="You are a professional Reddit data analyst specialized in user insight extraction"
+    task=(concat "Extract user demand insights from Reddit " search_query " comments and transform them into actionable SEO content strategies.")
+    requirements=(concat "Understand user needs by analyzing the title, post_text, num_comments, score, subreddit, created_utc, and comments of the posts under " search_query " on Reddit in the attachments. Please follow the strict <detailed_analysis_protocol> to perform the analysis. At the same time, the analysis results are output strictly in accordance with the format and order of output_example.")
+    context="Develop AI-powered SEO writing tool for e-commerce by understanding user needs through Reddit comment analysis"
+    detailed_analysis_protocol="Objective: Classify the purpose of titles and post_text according to the definitions and examples below to accurately identify the user's motivation for posting.You just need to output the name of the type. If the title and post_text in the attachments do not belong to the types mentioned below, please output the new type and explain it briefly.
+Definitions and examples of purposes:
+1. Recommendation seeking posts: Posts where users actively seek advice, suggestions, or recommendations from the community about a specific product, service, or experience.(e.g.,\"Any recommendations for a daily sneaker?\")
+2. Emotional expression posts: Posts where users share personal experiences, seek emotional support, or look for validation of their feelings, challenges, or experiences.(e.g.,\"Share my most embarrassing moment\")
+3. Entertainment/Curiosity posts: Playful, hypothetical, or engaging posts designed to stimulate conversation, share amusing content, or explore imaginative scenarios.(e.g.,\"Let's play a game...\")
+4. Knowledge exploration posts: Posts seeking detailed explanations, in-depth understanding, or clarification on complex topics from knowledgeable community members.(e.g.,\"Can someone explain...\")
+5. Professional communication posts: Posts focused on professional insights, technical discussions, industry-specific knowledge sharing, or career-related advice.(e.g.,\"Technical discussion about...\")
+6. Community cohesion posts: Posts designed to foster community interaction, gather collective opinions, or create shared experiences within the group.(e.g.,\"Community poll\")
+7. Information verification posts:Posts aimed at cross-checking facts, confirming information, or seeking collective validation of a specific claim or understanding.(e.g.,\"Fact-checking\")
+8. Personal growth posts:Posts seeking guidance, strategies, or insights for personal growth, self-improvement, and life skill enhancement.(e.g.,\"Personal development question\")
+9. Action suggestions posts: Posts where users seek practical advice, strategic approaches, or collective wisdom on handling specific situations or challenges.(e.g.,\"What would you do in this situation?\")
+10. Advertorial posts: A strategic content format that blends advertising and editorial content, designed to promote a product/service while mimicking authentic editorial style."
+    output_example="1. Purpose: Recommendation seeking posts"
+}}
+
+Data to analyze:
+{{json posts}}
