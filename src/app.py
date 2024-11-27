@@ -16,16 +16,16 @@ if "post_data" not in st.session_state:
 if "aws_creds" not in st.session_state:
     st.session_state.aws_creds = None
 
-password_input = st.text_input("Enter password to access the app:", type="password")
+password_input = st.text_input("Enter password to access the app:", type="password", key="password_input")
 
 if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
     st.subheader("AWS Credentials")
     
     if not st.session_state.aws_creds:
         with st.form("aws_creds_form"):
-            aws_access_key = st.text_input("AWS Access Key ID", type="password")
-            aws_secret_key = st.text_input("AWS Secret Access Key", type="password")
-            aws_region = st.text_input("AWS Region", value="us-west-2")
+            aws_access_key = st.text_input("AWS Access Key ID", type="password", key="aws_access_key")
+            aws_secret_key = st.text_input("AWS Secret Access Key", type="password", key="aws_secret_key")
+            aws_region = st.text_input("AWS Region", value="us-west-2", key="aws_region")
             
             if st.form_submit_button("Save AWS Credentials"):
                 if aws_access_key and aws_secret_key:
@@ -45,11 +45,11 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
 
     def main() -> None:
         st.title("Reddit Post Scraper")
-    
-        search_query = st.text_input("Enter a search query:")
-    
+
+        search_query = st.text_input("Enter a search query:", key="search_query")
+
         col1, col2 = st.columns(2)
-    
+
         with col1:
             search_option = st.selectbox(
                 "Select search option:",
@@ -61,8 +61,9 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                     "new": "New",
                     "comments": "Comment count",
                 }[x],
+                key="search_option"
             )
-    
+
         with col2:
             time_filter = st.selectbox(
                 "Select time filter:",
@@ -75,20 +76,22 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                     "day": "Today",
                     "hour": "Past hour",
                 }[x],
+                key="time_filter"
             )
-    
+
         max_posts = st.number_input(
-            "Maximum number of posts to scrape (0 for no limit):", min_value=0, value=10
+            "Maximum number of posts to scrape (0 for no limit):", min_value=0, value=10, key="max_posts"
         )
-    
-        use_api = st.checkbox("Use Reddit API (faster, but may hit rate limits)", value=True)
-    
+
+        use_api = st.checkbox("Use Reddit API (faster, but may hit rate limits)", value=True, key="use_api")
+
         log_level = st.selectbox(
             "Select log level:",
             ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
             index=1,
+            key="log_level"
         )
-    
+
         log_level_map = {
             "DEBUG": logging.DEBUG,
             "INFO": logging.INFO,
@@ -96,8 +99,8 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
             "ERROR": logging.ERROR,
             "CRITICAL": logging.CRITICAL,
         }
-    
-        if st.button("Scrape"):
+
+        if st.button("Scrape", key="scrape_button"):
             if search_query:
                 with st.spinner("Scraping data..."):
                     try:
@@ -108,7 +111,7 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                             client_secret="UOtiC3y7HAAiNyF-90fVQvDqgarVJg",
                             user_agent="melxtan",
                         )
-    
+
                         st.info(f"Fetching posts. Max posts: {max_posts}")
                         post_urls = scraper.get_posts(
                             search_query,
@@ -116,10 +119,10 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                             search_option=search_option,
                             limit=max_posts,
                         )
-    
+
                         st.info(f"Fetching post info for {len(post_urls)} posts")
                         post_data = scraper.get_reddit_post_info(post_urls)
-    
+
                         scraper.destroy()
                         st.session_state.post_data = post_data
                     except Exception as e:
@@ -129,25 +132,25 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                         logging.exception("An error occurred during scraping:")
             else:
                 st.warning("Please enter a search query.")
-    
+
         if st.session_state.post_data:
             post_data = st.session_state.post_data
             df_data = [{**post, "comments": json.dumps(post["comments"])} for post in post_data]
             df = pd.DataFrame(df_data)
-    
+
             st.subheader("Summary")
             st.write(f"Number of posts retrieved: {len(df)}")
             st.write(f"Total comments: {df['num_comments'].sum()}")
             st.write(f"Average score: {df['score'].mean():.2f}")
-    
+
             st.subheader("Data Preview")
             st.dataframe(df)
-    
+
             col1, col2 = st.columns(2)
-    
+
             safe_query = search_query.replace(" ", "_").lower()[:30]
             filename = f"reddit_{safe_query}_{search_option}_{time_filter}"
-    
+
             with col1:
                 json_str = json.dumps(post_data, indent=2)
                 st.download_button(
@@ -157,7 +160,7 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                     mime="application/json",
                     key="post_data_json"
                 )
-    
+
             with col2:
                 csv_buffer = io.StringIO()
                 df.to_csv(csv_buffer, index=False)
@@ -169,9 +172,9 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                     mime="text/csv",
                     key="post_data_csv"
                 )
-    
+
             st.subheader("Reddit Post Analysis")
-    
+
             if st.session_state.aws_creds:
                 analyze_button = st.button("Analyze Posts", key="analyze_button")
                 if analyze_button:
@@ -179,7 +182,7 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                         try:
                             os.environ["AWS_ACCESS_KEY_ID"] = st.session_state.aws_creds["access_key"]
                             os.environ["AWS_SECRET_ACCESS_KEY"] = st.session_state.aws_creds["secret_key"]
-    
+
                             st.info("Starting analysis...")
                             analysis_results = analyze_reddit_data(
                                 post_data=st.session_state.post_data,
@@ -188,11 +191,11 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                                 rate_limit_per_second=0.5,
                                 chunk_size=3
                             )
-    
+
                             if analysis_results:
                                 st.success("Analysis completed!")
                                 combined_analysis = combine_analyses(analysis_results)
-    
+
                                 if combined_analysis:
                                     sections = combined_analysis.split("\n\n")
                                     for section in sections:
@@ -202,7 +205,7 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                                                     st.write("\n".join(section.split('\n')[1:]))
                                             else:
                                                 st.write(section)
-    
+
                                 download_data = {
                                     "combined_analysis": combined_analysis,
                                     "individual_chunks": analysis_results,
@@ -212,10 +215,10 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                                         "number_of_chunks": len(analysis_results)
                                     }
                                 }
-    
+
                                 st.subheader("Download Analysis Results")
                                 col1 = st.columns(1)
-    
+
                                 with col1:
                                     analysis_json = json.dumps(download_data, indent=2)
                                     st.download_button(
@@ -232,9 +235,6 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                             logging.exception("Analysis error:")
             else:
                 st.warning("Please set your AWS credentials above to enable post analysis")
-
-if __name__ == "__main__":
-    main()
 
     if __name__ == "__main__":
         main()
