@@ -1,17 +1,17 @@
 import json
 import logging
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Dict
 import boto3
 from botocore.config import Config
 import tenacity
+import streamlit as st
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
 class RedditAnalyzer:
-    def __init__(self, region_name="us-west-2", max_workers=5, rate_limit_per_second=2, rate_limit_sleep_time=10):
+    def __init__(self, region_name="us-west-2", rate_limit_per_second=2, rate_limit_sleep_time=10):
         config = Config(
             region_name=region_name,
             retries=dict(
@@ -25,7 +25,6 @@ class RedditAnalyzer:
             config=config
         )
         
-        self.max_workers = max_workers
         self.rate_limit_per_second = rate_limit_per_second
         self.rate_limit_sleep_time = rate_limit_sleep_time
         self._last_request_time = 0
@@ -56,9 +55,10 @@ class RedditAnalyzer:
         before_sleep=lambda retry_state: logger.info(f"Retrying after {retry_state.next_action.sleep} seconds...")
     )
     
-    def _analyze_task(self, posts: List[Dict], task_number: int) -> Dict:
-        """Analyze a set of Reddit posts for a specific task"""
+    def _title_and_post_text_analysis(self, posts: List[Dict]) -> Dict:
+        """Analyze the title and post text"""
         self._rate_limit()
+        st.info("Running Title and Post Text Analysis...")
         
         try:
             # Get the subreddit from the first post in the list
@@ -70,7 +70,7 @@ class RedditAnalyzer:
                 "messages": [
                     {
                         "role": "user",
-                        "content": f"Please analyze this Reddit data according to the following protocol:\n\n{json.dumps(posts, indent=2)}\n\nProtocol:\nTask {task_number}: {self.template.split('\n')[task_number-1]}"
+                        "content": f"Please analyze this Reddit data according to the following protocol:\n\n{json.dumps(posts, indent=2)}\n\nProtocol:\n{self.template.split('<title_and_post_text_analysis>')[1].split('</title_and_post_text_analysis>')[0]}"
                     }
                 ],
                 "temperature": 0.7,
@@ -90,17 +90,185 @@ class RedditAnalyzer:
             logger.info(f"Response structure: {json.dumps(response_body, indent=2)}")
             
             return {
-                'task_number': task_number,
+                'task_number': 1,
                 'analysis': response_body['content'] if isinstance(response_body, dict) and 'content' in response_body else response_body['messages'][0]['content'],
                 'posts_analyzed': len(posts)
             }
             
         except Exception as e:
-            logger.error(f"Error in _analyze_task: {str(e)}")
+            logger.error(f"Error in _title_and_post_text_analysis: {str(e)}")
             logger.error(f"Error type: {type(e).__name__}")
             raise
+
+    def _language_feature_extraction(self, posts: List[Dict]) -> Dict:
+        """Analyze language features"""
+        self._rate_limit()
+        st.info("Running Language Feature Extraction...")
+        
+        try:
+            body = {
+                "anthropic_version": "bedrock-2023-05-31",
+                "max_tokens": 4096,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": f"Please analyze this Reddit data according to the following protocol:\n\n{json.dumps(posts, indent=2)}\n\nProtocol:\n{self.template.split('<language_feature_extraction>')[1].split('</language_feature_extraction>')[0]}"
+                    }
+                ],
+                "temperature": 0.7,
+                "top_k": 250,
+                "top_p": 0.999,
+                "stop_sequences": []
+            }
             
-    def analyze_posts(self, posts: List[Dict], num_top_posts: int = 10) -> List[Dict]:
+            response = self.bedrock.invoke_model(
+                modelId="anthropic.claude-3-haiku-20240307-v1:0",
+                body=json.dumps(body),
+                accept="application/json",
+                contentType="application/json"
+            )
+            
+            response_body = json.loads(response['body'].read().decode())
+            logger.info(f"Response structure: {json.dumps(response_body, indent=2)}")
+            
+            return {
+                'task_number': 2,
+                'analysis': response_body['content'] if isinstance(response_body, dict) and 'content' in response_body else response_body['messages'][0]['content'],
+                'posts_analyzed': len(posts)
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in _language_feature_extraction: {str(e)}")
+            logger.error(f"Error type: {type(e).__name__}")
+            raise
+
+    def _sentiment_color_tracking(self, posts: List[Dict]) -> Dict:
+        """Analyze sentiment"""
+        self._rate_limit()
+        st.info("Running Sentiment Color Tracking...")
+        
+        try:
+            body = {
+                "anthropic_version": "bedrock-2023-05-31",
+                "max_tokens": 4096,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": f"Please analyze this Reddit data according to the following protocol:\n\n{json.dumps(posts, indent=2)}\n\nProtocol:\n{self.template.split('<sentiment_color_tracking>')[1].split('</sentiment_color_tracking>')[0]}"
+                    }
+                ],
+                "temperature": 0.7,
+                "top_k": 250,
+                "top_p": 0.999,
+                "stop_sequences": []
+            }
+            
+            response = self.bedrock.invoke_model(
+                modelId="anthropic.claude-3-haiku-20240307-v1:0",
+                body=json.dumps(body),
+                accept="application/json",
+                contentType="application/json"
+            )
+            
+            response_body = json.loads(response['body'].read().decode())
+            logger.info(f"Response structure: {json.dumps(response_body, indent=2)}")
+            
+            return {
+                'task_number': 3,
+                'analysis': response_body['content'] if isinstance(response_body, dict) and 'content' in response_body else response_body['messages'][0]['content'],
+                'posts_analyzed': len(posts)
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in _sentiment_color_tracking: {str(e)}")
+            logger.error(f"Error type: {type(e).__name__}")
+            raise
+
+    def _trend_analysis(self, posts: List[Dict]) -> Dict:
+        """Analyze trends"""
+        self._rate_limit()
+        st.info("Running Trend Analysis...")
+        
+        try:
+            body = {
+                "anthropic_version": "bedrock-2023-05-31",
+                "max_tokens": 4096,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": f"Please analyze this Reddit data according to the following protocol:\n\n{json.dumps(posts, indent=2)}\n\nProtocol:\n{self.template.split('<trend_analysis>')[1].split('</trend_analysis>')[0]}"
+                    }
+                ],
+                "temperature": 0.7,
+                "top_k": 250,
+                "top_p": 0.999,
+                "stop_sequences": []
+            }
+            
+            response = self.bedrock.invoke_model(
+                modelId="anthropic.claude-3-haiku-20240307-v1:0",
+                body=json.dumps(body),
+                accept="application/json",
+                contentType="application/json"
+            )
+            
+            response_body = json.loads(response['body'].read().decode())
+            logger.info(f"Response structure: {json.dumps(response_body, indent=2)}")
+            
+            return {
+                'task_number': 4,
+                'analysis': response_body['content'] if isinstance(response_body, dict) and 'content' in response_body else response_body['messages'][0]['content'],
+                'posts_analyzed': len(posts)
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in _trend_analysis: {str(e)}")
+            logger.error(f"Error type: {type(e).__name__}")
+            raise
+
+    def _correlation_analysis(self, posts: List[Dict]) -> Dict:
+        """Analyze correlations"""
+        self._rate_limit()
+        st.info("Running Correlation Analysis...")
+        
+        try:
+            body = {
+                "anthropic_version": "bedrock-2023-05-31",
+                "max_tokens": 4096,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": f"Please analyze this Reddit data according to the following protocol:\n\n{json.dumps(posts, indent=2)}\n\nProtocol:\n{self.template.split('<correlation_analysis>')[1].split('</correlation_analysis>')[0]}"
+                    }
+                ],
+                "temperature": 0.7,
+                "top_k": 250,
+                "top_p": 0.999,
+                "stop_sequences": []
+            }
+            
+            response = self.bedrock.invoke_model(
+                modelId="anthropic.claude-3-haiku-20240307-v1:0",
+                body=json.dumps(body),
+                accept="application/json",
+                contentType="application/json"
+            )
+            
+            response_body = json.loads(response['body'].read().decode())
+            logger.info(f"Response structure: {json.dumps(response_body, indent=2)}")
+            
+            return {
+                'task_number': 5,
+                'analysis': response_body['content'] if isinstance(response_body, dict) and 'content' in response_body else response_body['messages'][0]['content'],
+                'posts_analyzed': len(posts)
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in _correlation_analysis: {str(e)}")
+            logger.error(f"Error type: {type(e).__name__}")
+            raise
+
+    def analyze_posts(self, posts: List[Dict], num_top_posts: int = 20) -> List[Dict]:
         """Analyze the top N Reddit posts based on score, highest to lowest"""
         # Sort the posts by score, highest to lowest
         posts = sorted(posts, key=lambda x: x['score'], reverse=True)
@@ -110,32 +278,30 @@ class RedditAnalyzer:
         
         logger.info(f"Starting analysis of {len(top_posts)} top posts")
         
-        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            future_to_task = {
-                executor.submit(self._analyze_task, top_posts, task_number): task_number
-                for task_number in range(1, 6)
-            }
-            
-            for future in as_completed(future_to_task):
-                task_number = future_to_task[future]
-                try:
-                    analysis = future.result()
-                    results.append(analysis)
-                    logger.info(f"Successfully analyzed task {task_number} with {analysis.get('posts_analyzed', 0)} posts")
-                except Exception as e:
-                    logger.error(f"Failed to analyze task {task_number}: {str(e)}")
-                    
+        title_and_post_text_analysis = self._title_and_post_text_analysis(top_posts)
+        results.append(title_and_post_text_analysis)
+        
+        language_feature_extraction = self._language_feature_extraction(top_posts)
+        results.append(language_feature_extraction)
+        
+        sentiment_color_tracking = self._sentiment_color_tracking(top_posts)
+        results.append(sentiment_color_tracking)
+        
+        trend_analysis = self._trend_analysis(top_posts)
+        results.append(trend_analysis)
+        
+        correlation_analysis = self._correlation_analysis(top_posts)
+        results.append(correlation_analysis)
+        
         return results
 
 def analyze_reddit_data(post_data: List[Dict], 
                        region_name: str = "us-west-2",
-                       max_workers: int = 5,
                        rate_limit_per_second: int = 2,
                        rate_limit_sleep_time: int = 10,
-                       num_top_posts: int = 20) -> Dict:
+                       num_top_posts: int = 20) -> List[Dict]:
     analyzer = RedditAnalyzer(
         region_name=region_name,
-        max_workers=max_workers,
         rate_limit_per_second=rate_limit_per_second,
         rate_limit_sleep_time=rate_limit_sleep_time
     )
