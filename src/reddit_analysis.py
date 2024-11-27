@@ -121,21 +121,32 @@ class RedditAnalyzer:
             try:
                 self._rate_limit()
                 
-                # For correlation analysis, include summarized previous results
-                previous_results = ""
+                # Create different prompts for correlation vs other tasks
                 if task_name == "correlation_analysis":
-                    previous_results = self._format_previous_results()
-                
-                prompt = (
-                    f"{components['role']}\n\n"
-                    f"Task: {components['task']}\n"
-                    f"Context: {components['context']}\n\n"
-                    f"Analysis Protocol:\n{components['protocol']}\n\n"
-                    f"You must format your response EXACTLY like this example:\n{components['output_format']}\n\n"
-                    f"Do not deviate from this format or add any additional explanations.\n\n"
-                    f"Data to analyze:\n{json.dumps(posts, indent=2)}"
-                    f"{previous_results}"
-                )
+                    try:
+                        previous_results = self._format_previous_results()
+                        prompt = (
+                            f"{components['role']}\n\n"
+                            f"Task: {components['task']}\n"
+                            f"Context: {components['context']}\n\n"
+                            f"Analysis Protocol:\n{components['protocol']}\n\n"
+                            f"You must format your response EXACTLY like this example:\n{components['output_format']}\n\n"
+                            f"Do not deviate from this format or add any additional explanations.\n\n"
+                            f"Previous analysis results to correlate:\n{previous_results}"
+                        )
+                    except Exception as e:
+                        logger.error(f"Error formatting previous results: {str(e)}")
+                        raise
+                else:
+                    prompt = (
+                        f"{components['role']}\n\n"
+                        f"Task: {components['task']}\n"
+                        f"Context: {components['context']}\n\n"
+                        f"Analysis Protocol:\n{components['protocol']}\n\n"
+                        f"You must format your response EXACTLY like this example:\n{components['output_format']}\n\n"
+                        f"Do not deviate from this format or add any additional explanations.\n\n"
+                        f"Data to analyze:\n{json.dumps(posts, indent=2)}"
+                    )
                 
                 # Log prompt length for debugging
                 logger.debug(f"Prompt length for {task_name}: {len(prompt)} characters")
@@ -164,10 +175,24 @@ class RedditAnalyzer:
                 
                 response_body = json.loads(response['body'].read().decode())
                 
+                # Handle different response formats
+                if isinstance(response_body, dict):
+                    content = response_body.get('content', '')
+                elif isinstance(response_body, list):
+                    content = response_body[0].get('content', '') if response_body else ''
+                else:
+                    content = str(response_body)
+                
+                # Ensure content is a string
+                if isinstance(content, list):
+                    content = ' '.join(str(item) for item in content)
+                elif not isinstance(content, str):
+                    content = str(content)
+                
                 result = {
                     'task_name': task_name,
                     'task_number': task_number,
-                    'analysis': response_body['content'] if isinstance(response_body, dict) and 'content' in response_body else response_body['messages'][0]['content'],
+                    'analysis': content,
                     'posts_analyzed': len(posts)
                 }
                 
