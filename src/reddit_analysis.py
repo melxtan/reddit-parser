@@ -9,11 +9,11 @@ from botocore.config import Config
 logger = logging.getLogger(__name__)
 
 class RedditAnalyzer:
-    def __init__(self, region_name="us-west-2", rate_limit_per_second=0.5):
+    def __init__(self, region_name="us-west-2", rate_limit_per_second=0.2):
         config = Config(
             region_name=region_name,
             retries=dict(
-                max_attempts=5,
+                max_attempts=8,
                 mode="adaptive"
             )
         )
@@ -52,8 +52,8 @@ class RedditAnalyzer:
         self._last_request_time = time.time()
 
     def _analyze_task(self, posts: List[Dict], task_name: str, task_number: int) -> Dict:
-        max_retries = 5
-        base_delay = 4
+        max_retries = 8
+        base_delay = 10
         
         for attempt in range(max_retries):
             try:
@@ -124,8 +124,8 @@ class RedditAnalyzer:
 def analyze_reddit_data(post_data: List[Dict], 
                        callback: Callable[[str, Dict], None],
                        region_name: str = "us-west-2",
-                       rate_limit_per_second: float = 0.5,
-                       num_top_posts: int = 20):
+                       rate_limit_per_second: float = 0.2,
+                       num_top_posts: int = 10):
     analyzer = RedditAnalyzer(
         region_name=region_name,
         rate_limit_per_second=rate_limit_per_second
