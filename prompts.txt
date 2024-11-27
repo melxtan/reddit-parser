@@ -1,6 +1,6 @@
 <task>Extract user demand insights from Reddit {search_query} comments and transform them into actionable SEO content strategies.</task>
 
-<requirements>Understand user needs by analyzing the title, post_text, num_comments, score, subreddit, created_utc, and comments of the posts under {search_query} on Reddit in the attachments. Please follow the strict <detailed_analysis_protocol> to perform the analysis and follow the specified output examples.</requirements>
+<requirements>Understand user needs by analyzing the title, post_text, num_comments, score, subreddit, created_utc, and comments of the posts under {search_query} on Reddit in the attachments. Please follow the strict <detailed_analysis_protocol> to perform the analysis. At the same time, the analysis results are output strictly in accordance with the format and order of output_example.</requirements>
 
 <role>You are a professional Reddit data analyst specialized in user insight extraction</role>
 
@@ -20,16 +20,31 @@ Definitions and examples of purposes:
 8. Personal growth posts:Posts seeking guidance, strategies, or insights for personal growth, self-improvement, and life skill enhancement.(e.g.,"Personal development question")
 9. Action suggestions posts: Posts where users seek practical advice, strategic approaches, or collective wisdom on handling specific situations or challenges.(e.g.,"What would you do in this situation?")
 10. Advertorial posts: A strategic content format that blends advertising and editorial content, designed to promote a product/service while mimicking authentic editorial style.
+<output_example>
+1. Purpose: Recommendation seeking posts
+</output_example>
 </title_and_post_text_analysis>
 <language_feature_extraction>
 Objective: According to the definitions provided below, analyze the language characteristics of post_text and comments in the attachments to gain insight into customer needs, and output the specific contents and frequency of each descriptive adjective, product needs description phrase, professional terminology usage in order. Please eliminate repetitive language proactively.
 1. Descriptive adjective: Words that provide detailed characteristics or qualities of a product, experience, or object.(e.g.,"durable","Comfortable") Please output the specific adjectives and their frequencies.
 2. Product needs description phrases: Specific language patterns expressing user requirements, expectations, or desired product features.(e.g.,"I need something that...","Easy to clean and maintain") Please summarize all the relevant phrases mentioned in the comments when outputting.
-3. Professional terminology usage: Specialized technical language specific to an industry or product category, indicating expertise and precise communication.(e.g., "Blockchain" in Tech domain,"Arch support" in Sneakers)</language_feature_extraction>
+3. Professional terminology usage: Specialized technical language specific to an industry or product category, indicating expertise and precise communication.(e.g., "Blockchain" in Tech domain,"Arch support" in Sneakers)
+<output_example>
+2. Language
+2.1 Descriptive adjective: casual (6 times), basic (32 times)
+2.2 Product needs description phrases: a good pair of white sneakers, cheap quality, not too mainstream
+2.3 Professional terminology usage: suede (2 times)
+</output_example>
+</language_feature_extraction>
 <sentiment_color_tracking>
 Objective: Analyze the sentiment of post_text and comments in the attachments to gain insights into user needs.
 1. Overall_sentiment: Identify emotional tone positive/negative/neutral of post_text and comments : e.g.,"like", "hate", "average", and output Positive/Negative/Neutral based on the analysis results.
 2. Contextual sentiment interpretation: Consider sarcasm, detect implicit emotional meanings, analyze tone and subtext. If these conditions exist, output a simple analysis. If these conditions do not exist, do not output anything.
+<output_example>
+3. Sentiment
+3.1 Overall_sentiment: positive
+3.2 Contextual sentiment interpretation: none
+</output_example>
 </sentiment_color_tracking>
 <trend_analysis>
 Objective: Better identify user needs through time series analysis and trend prediction.
@@ -38,6 +53,20 @@ Objective: Better identify user needs through time series analysis and trend pre
 - Comment peak periods: According to the content of comments in the attachments, summarize the peak time of comments.
 - Discussion activity variations: Combined with the actual situation, briefly discuss the reasons for the changes in discussion popularity, user active time periods, and seasonal topics in different time periods.
 2. Trend Prediction: Combined with the results of time series analysis, predict future topic evolution direction and user needs transformation.
+<output_example>
+4. Trend
+4.1 Post publication time distribution: From November 2023 to May 2024, time span is about 6 months.
+4.2 Comment peak periods: Most comments are between 12:20-13:10.
+4.3 Discussion activity variations: May be a seasonal topic, related to the sneaker sales cycle
+4.4 Trend Prediction: 
+a. Seasonal demand changes
+•Winter (November): warmth, lightness
+•New Year (January): fitness plan, new equipment
+b. Possible topic evolution
+•From warm design to multi-function
+•From indoor to outdoor
+•From basic needs to performance needs
+</output_example>
 </trend_analysis>
 <correlation_analysis>
 Objective: By combining the analysis results of <title_and_post_text_analysis>, <language_feature_extraction>, <sentiment_color_tracking> and <trend_analysis>, determine the problem type and analyze the user's pain point. Transform them into actionable SEO content strategies and output them according to the outline and instructions below. The following are some problem types for reference only.
@@ -51,30 +80,7 @@ Outline and instructions:
 2.Content theme direction: Output 3 pieces of content for reference and summarize each in one sentence.
 3.SEO keyword structure and content details analysis: Output 5 keyword structures with variables and correspondingly 10 possible values for each variable.(e.g.,where to buy [product] in [location], [product]: laptop,smartphone,bicycle,television,refrigerator,washing machine,sofa,dining table,microwave,air conditioner,[location]: New York,Los Angeles,Chicago,Houston,Miami,San Francisco,Seattle,Boston,Atlanta,Dallas."[]"means the variables inside, users can choose to replace them according to the specific values provided.) There is no limit to the number of variables contained in each keyword structure. All keywords outputted must be suitable for appearing in this blog article and preferably have variables. Based on the contents of the above five SEO keyword structures, output the corresponding content details.
 4.Main brands and products mentioned, frequency and attitudes: Identify the brands and times mentioned by users in their comments, and determine the user's attitude "positive/negative/neutral" each time the brand is mentioned. Pay attention to identifying implicit emotions and whether there are special contexts. Calculate the proportion of positive/negative/neutral attitudes based on the number of mentions and the attitude each time the brand is mentioned, and compare the calculation results. The attitude with the highest proportion is assumed to be the user's attitude towards this product of the brand. Please output the brand name, number of mentions, and user attitude in order.(e.g.,Nike Air Force 1: 5 times, positive)
-</correlation_analysis>
-</detailed_analysis_protocol>
-
 <output_example>
-1. Purpose: Recommendation seeking posts
-2. Language
-2.1 Descriptive adjective: casual (6 times), basic (32 times)
-2.2 Product needs description phrases: a good pair of white sneakers, cheap quality, not too mainstream
-2.3 Professional terminology usage: suede (2 times)
-3. Sentiment
-3.1 Overall_sentiment: positive
-3.2 Contextual sentiment interpretation: none
-4. Trend
-4.1 Post publication time distribution: From November 2023 to May 2024, time span is about 6 months.
-4.2 Comment peak periods: Most comments are between 12:20-13:10.
-4.3 Discussion activity variations: May be a seasonal topic, related to the sneaker sales cycle
-4.4 Trend Prediction: 
-a. Seasonal demand changes
-•Winter (November): warmth, lightness
-•New Year (January): fitness plan, new equipment
-b. Possible topic evolution
-•From warm design to multi-function
-•From indoor to outdoor
-•From basic needs to performance needs
 5. SEO content strategies 
 5.1 Summary: Sneaker consumers are searching for lightweight, affordable footwear under $150, creating a prime opportunity for targeted SEO content. The key is to create comprehensive guides, comparison articles, and product reviews that highlight the value proposition of lightweight sneakers. Optimizing content around search terms like "affordable performance sneakers," "lightweight shoes under $150," and "best budget athletic footwear" can help brands directly connect with consumers seeking cost-effective, high-performance footwear solutions. 
 5.2 Content theme direction:
@@ -94,3 +100,5 @@ a. New Balance 990v5 (5 times, positive)
 b. Puma RS-X (10 times, positive)
 c. Nike Air Max 270 (3 times, neutral)
 </output_example>
+</correlation_analysis>
+</detailed_analysis_protocol>
