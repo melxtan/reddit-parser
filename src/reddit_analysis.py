@@ -11,7 +11,7 @@ from collections import defaultdict
 logger = logging.getLogger(__name__)
 
 class RedditAnalyzer:
-    def __init__(self, region_name="us-west-2", rate_limit_per_second=0.2):
+    def __init__(self, region_name="us-west-2", rate_limit_per_second=0.2, search_query=""):
         config = Config(
             region_name=region_name,
             retries=dict(
@@ -29,6 +29,7 @@ class RedditAnalyzer:
         self._last_request_time = 0
         self.template = self._load_prompt_template()
         self.analysis_results = defaultdict(dict)
+        self.search_query = search_query
         
         self.tasks = [
             (1, "title_and_post_text_analysis"),
@@ -60,6 +61,7 @@ class RedditAnalyzer:
             
         task_content = task_match.group(1).strip()
         
+        # Extract components and replace {search_query} with actual query
         components = {
             'task': self._extract_tag_content(task_content, 'task'),
             'requirements': self._extract_tag_content(task_content, 'requirements'),
@@ -68,6 +70,10 @@ class RedditAnalyzer:
             'protocol': self._extract_tag_content(task_content, 'detailed_analysis_protocol'),
             'output_format': self._extract_tag_content(task_content, 'output_example')
         }
+        
+        # Replace {search_query} in each component
+        for key in components:
+            components[key] = components[key].replace('{search_query}', self.search_query)
         
         return components
 
@@ -268,10 +274,12 @@ def analyze_reddit_data(post_data: List[Dict],
                        callback: Callable[[str, Dict], None],
                        region_name: str = "us-west-2",
                        rate_limit_per_second: float = 0.2,
-                       num_top_posts: int = 10):
+                       num_top_posts: int = 10,
+                       search_query: str = ""):
     analyzer = RedditAnalyzer(
         region_name=region_name,
-        rate_limit_per_second=rate_limit_per_second
+        rate_limit_per_second=rate_limit_per_second,
+        search_query=search_query
     )
     
     analyzer.analyze_posts(post_data, callback, num_top_posts)
