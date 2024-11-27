@@ -196,13 +196,21 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                                 st.success("Analysis completed!")
                                 combined_analysis_result = combine_analyses(analysis_results)
                             
+                                st.success("Analysis completed!")
+                                combined_analysis_result = combine_analyses(analysis_results)
+                            
                                 if combined_analysis_result["combined_analysis"] is not None:
                                     sections = combined_analysis_result["combined_analysis"].split("\n\n")
                                     for section in sections:
                                         if section.strip():
                                             st.write(section)
                             
-                                download_data = combined_analysis_result
+                                if combined_analysis_result["individual_chunks"]:
+                                    st.subheader("Individual Analysis Chunks")
+                                    for chunk in combined_analysis_result["individual_chunks"]:
+                                        st.write(f"Chunk ID: {chunk.get('chunk_id')}")
+                                        st.write(chunk.get("analysis", {}))
+                                        st.write("---")
                                 
                                 st.subheader("Download Analysis Results")
 
