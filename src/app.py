@@ -214,29 +214,21 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                         num_top_posts=20
                     )
                     
-                    # Show download button for complete results
-                    if st.session_state.analysis_results:
-                        analysis_json = json.dumps(st.session_state.analysis_results, indent=2)
-                        st.download_button(
-                            label="Download Complete Analysis (JSON)",
-                            data=analysis_json,
-                            file_name=f"{filename}_analysis.json",
-                            mime="application/json",
-                            key="analysis_json"
-                        )
-                        
                 except Exception as e:
                     st.error(f"Analysis failed: {str(e)}")
                     logging.exception("Analysis error:")
             
             # Display existing results if any
             if st.session_state.analysis_results:
-                for task_name, result in st.session_state.analysis_results.items():
-                    if 'error' not in result:
-                        st.subheader(task_name.replace('_', ' ').title())
-                        st.write(result['analysis'])
-                        st.write("---")
+                # Only show results if not currently analyzing
+                if not st.session_state.task_containers:
+                    for task_name, result in st.session_state.analysis_results.items():
+                        if 'error' not in result:
+                            st.subheader(task_name.replace('_', ' ').title())
+                            st.write(result['analysis'])
+                            st.write("---")
                 
+                # Show download button for complete results
                 analysis_json = json.dumps(st.session_state.analysis_results, indent=2)
                 st.download_button(
                     label="Download Complete Analysis (JSON)",
