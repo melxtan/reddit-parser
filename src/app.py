@@ -214,7 +214,7 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                                 
                                 st.subheader("Download Analysis Results")
 
-                                analysis_json = json.dumps(download_data, indent=2)
+                                analysis_json = json.dumps(combined_analysis_result, indent=2)
                                 st.download_button(
                                     label="Download Full Analysis (JSON)",
                                     data=analysis_json,
