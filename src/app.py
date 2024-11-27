@@ -3,7 +3,6 @@ import json
 import logging
 import os
 from datetime import datetime
-
 import pandas as pd
 import streamlit as st
 from scrape_reddit import ScrapeReddit
@@ -14,11 +13,13 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(level
 if "post_data" not in st.session_state:
     st.session_state.post_data = None
 if "analysis_results" not in st.session_state:
-    st.session_state.analysis_results = None
+    st.session_state.analysis_results = {}
 if "aws_creds" not in st.session_state:
     st.session_state.aws_creds = None
 
-def main() -> None:
+password_input = st.text_input("Enter password to access the app:", type="password", key="password_input")
+
+if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
     st.title("Reddit Post Scraper")
 
     search_query = st.text_input("Enter a search query:", key="search_query")
@@ -67,21 +68,13 @@ def main() -> None:
         key="log_level"
     )
 
-    log_level_map = {
-        "DEBUG": logging.DEBUG,
-        "INFO": logging.INFO,
-        "WARNING": logging.WARNING,
-        "ERROR": logging.ERROR,
-        "CRITICAL": logging.CRITICAL,
-    }
-
     if st.button("Scrape", key="scrape_button"):
         if search_query:
             with st.spinner("Scraping data..."):
                 try:
                     scraper = ScrapeReddit(
                         use_api=use_api,
-                        log_level=log_level_map[log_level],
+                        log_level=logging.getLevelName(log_level),
                         client_id="uLbd7l7K0bLH2zsaTpIOTw",
                         client_secret="UOtiC3y7HAAiNyF-90fVQvDqgarVJg",
                         user_agent="melxtan",
@@ -100,10 +93,9 @@ def main() -> None:
 
                     scraper.destroy()
                     st.session_state.post_data = post_data
+                    st.session_state.analysis_results = {}  # Reset analysis results
                 except Exception as e:
                     st.error(f"An error occurred: {str(e)}")
-                    st.error(f"Error type: {type(e).__name__}")
-                    st.error(f"Error details: {e.args}")
                     logging.exception("An error occurred during scraping:")
         else:
             st.warning("Please enter a search query.")
@@ -122,7 +114,6 @@ def main() -> None:
         st.dataframe(df)
 
         col1, col2 = st.columns(2)
-
         safe_query = search_query.replace(" ", "_").lower()[:30]
         filename = f"reddit_{safe_query}_{search_option}_{time_filter}"
 
@@ -148,76 +139,89 @@ def main() -> None:
                 key="post_data_csv"
             )
 
-    st.subheader("AWS Credentials")
-    
-    if not st.session_state.aws_creds:
-        with st.form("aws_creds_form"):
-            aws_access_key = st.text_input("AWS Access Key ID", type="password", key="aws_access_key")
-            aws_secret_key = st.text_input("AWS Secret Access Key", type="password", key="aws_secret_key")
-            aws_region = st.text_input("AWS Region", value="us-west-2", key="aws_region")
+        # AWS Credentials Section
+        st.subheader("AWS Credentials")
+        
+        if not st.session_state.aws_creds:
+            with st.form("aws_creds_form"):
+                aws_access_key = st.text_input("AWS Access Key ID", type="password", key="aws_access_key")
+                aws_secret_key = st.text_input("AWS Secret Access Key", type="password", key="aws_secret_key")
+                aws_region = st.text_input("AWS Region", value="us-west-2", key="aws_region")
+                
+                if st.form_submit_button("Save AWS Credentials"):
+                    if aws_access_key and aws_secret_key:
+                        st.session_state.aws_creds = {
+                            "access_key": aws_access_key,
+                            "secret_key": aws_secret_key,
+                            "region": aws_region
+                        }
+                        st.success("AWS credentials saved!")
+                    else:
+                        st.error("Please enter both AWS Access Key ID and Secret Access Key")
+        else:
+            st.success("AWS credentials are set")
+            if st.button("Clear AWS Credentials", key="clear_creds"):
+                st.session_state.aws_creds = None
+                st.experimental_rerun()
+
+        # Analysis Section
+        if st.session_state.aws_creds:
+            st.subheader("Reddit Post Analysis")
             
-            if st.form_submit_button("Save AWS Credentials"):
-                if aws_access_key and aws_secret_key:
-                    st.session_state.aws_creds = {
-                        "access_key": aws_access_key,
-                        "secret_key": aws_secret_key,
-                        "region": aws_region
-                    }
-                    st.success("AWS credentials saved!")
-                else:
-                    st.error("Please enter both AWS Access Key ID and Secret Access Key")
-    else:
-        st.success("AWS credentials are set")
-        if st.button("Clear AWS Credentials", key="clear_creds"):
-            st.session_state.aws_creds = None
-            st.experimental_rerun()
-
-    st.subheader("Reddit Post Analysis")
-
-    if st.button("Analyze Reddit Posts", key="analyze_button"):
-        if st.session_state.post_data and st.session_state.aws_creds:
-            with st.spinner("Running analysis..."):
+            if st.button("Analyze Reddit Posts"):
                 try:
                     os.environ["AWS_ACCESS_KEY_ID"] = st.session_state.aws_creds["access_key"]
                     os.environ["AWS_SECRET_ACCESS_KEY"] = st.session_state.aws_creds["secret_key"]
-
-                    st.info("Starting analysis...")
-                    analysis_results = analyze_reddit_data(
+                    
+                    # Create placeholder containers for each task
+                    task_containers = {
+                        "title_and_post_text_analysis": st.empty(),
+                        "language_feature_extraction": st.empty(),
+                        "sentiment_color_tracking": st.empty(),
+                        "trend_analysis": st.empty(),
+                        "correlation_analysis": st.empty()
+                    }
+                    
+                    # Initialize status messages
+                    for name, container in task_containers.items():
+                        container.info(f"Waiting to start {name.replace('_', ' ').title()}...")
+                    
+                    # Start analysis
+                    st.session_state.analysis_results = analyze_reddit_data(
                         post_data=st.session_state.post_data,
                         region_name=st.session_state.aws_creds["region"],
-                        max_workers=2,
                         rate_limit_per_second=0.5,
                         num_top_posts=20
                     )
-                    st.session_state.analysis_results = analysis_results
+                    
+                    # Update UI with results as they come in
+                    for task_name, result in st.session_state.analysis_results.items():
+                        container = task_containers[task_name]
+                        if 'error' in result:
+                            container.error(f"Error in {task_name.replace('_', ' ').title()}: {result['error']}")
+                        else:
+                            container.success(f"{task_name.replace('_', ' ').title()} completed!")
+                            st.subheader(task_name.replace('_', ' ').title())
+                            st.write(result['analysis'])
+                            st.write("---")
+                    
+                    # Show download button for complete results
+                    if st.session_state.analysis_results:
+                        analysis_json = json.dumps(st.session_state.analysis_results, indent=2)
+                        st.download_button(
+                            label="Download Complete Analysis (JSON)",
+                            data=analysis_json,
+                            file_name=f"{filename}_analysis.json",
+                            mime="application/json",
+                            key="analysis_json"
+                        )
+                        
                 except Exception as e:
                     st.error(f"Analysis failed: {str(e)}")
                     logging.exception("Analysis error:")
-
-    if st.session_state.analysis_results:
-        for task_result in st.session_state.analysis_results:
-            if task_result['task_number'] == 1:
-                st.subheader("Title and Post Text Analysis")
-            elif task_result['task_number'] == 2:
-                st.subheader("Language Feature Extraction")
-            elif task_result['task_number'] == 3:
-                st.subheader("Sentiment Color Tracking")
-            elif task_result['task_number'] == 4:
-                st.subheader("Trend Analysis")
-            elif task_result['task_number'] == 5:
-                st.subheader("Correlation Analysis")
-            st.write(task_result['analysis'])
-            st.write("---")
-
-        st.subheader("Download Analysis Results")
-        analysis_json = json.dumps(st.session_state.analysis_results, indent=2)
-        st.download_button(
-            label="Download Analysis (JSON)",
-            data=analysis_json,
-            file_name=f"{filename}_analysis.json",
-            mime="application/json",
-            key="analysis_json"
-        )
-
-if __name__ == "__main__":
-    main()
+            
+            # Display existing results
+            if st.session_state.analysis_results:
+                for task_name, result in st.session_state.analysis_results.items():
+                    if 'error' not in result:
+                        st.subhe
