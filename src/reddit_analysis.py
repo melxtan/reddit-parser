@@ -167,6 +167,13 @@ def combine_analyses(results: List[Dict]) -> Dict[str, Union[str, List[Dict], Di
                 analysis_text = analysis["text"]
             else:
                 logging.warning(f"Unexpected analysis structure: {analysis}")
+        elif isinstance(analysis, list):
+            # Handle the case where the analysis is a list
+            analysis_text = "\n".join(
+                item.get("text", "")
+                for item in analysis
+                if isinstance(item, dict) and item.get("type") == "text"
+            )
         else:
             logging.warning(f"Unknown analysis type: {type(analysis)}")
 
