@@ -202,7 +202,7 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                     # Initialize status messages
                     for task_name in task_order:
                         st.session_state.task_containers[task_name]['status'].info(
-                            f"Waiting to start {task_name.replace('_', ' ').title()}..."
+                            f"Running {task_name.replace('_', ' ').title()}..."
                         )
                     
                     def update_task_status(task_name: str, result: dict):
