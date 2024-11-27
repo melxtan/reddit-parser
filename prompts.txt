@@ -94,7 +94,7 @@ b. Possible topic evolution
 <role>You are a professional Reddit data analyst specialized in user insight extraction</role>
 
 <context>Develop AI-powered SEO writing tool for e-commerce by understanding user needs through Reddit comment analysis</context>
-<detailed_analysis_protocol>Objective: Determine the problem type and analyze the user's pain point. Transform them into actionable SEO content strategies and output them according to the outline and instructions below. The following are some problem types for reference only.
+<detailed_analysis_protocol>Objective: By combining the analysis results of <title_and_post_text_analysis>, <language_feature_extraction>, <sentiment_color_tracking> and <trend_analysis>, determine the problem type and analyze the user's pain point. Transform them into actionable SEO content strategies and output them according to the outline and instructions below. The following are some problem types for reference only.
 Problem Type Classification:
 - Technical issues
 - Usability challenges
