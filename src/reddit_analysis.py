@@ -144,8 +144,8 @@ def combine_analyses(results: List[Dict]) -> Dict[str, Union[str, List[Dict], Di
     individual_chunks = []
 
     for result in results:
-        if not result:
-            logging.warning("Empty result encountered, skipping.")
+        if not result or not result.get("analysis"):
+            logging.warning("Empty result or missing analysis encountered, skipping.")
             continue
 
         analysis = result.get("analysis", {})
@@ -170,12 +170,9 @@ def combine_analyses(results: List[Dict]) -> Dict[str, Union[str, List[Dict], Di
         else:
             logging.warning(f"Unknown analysis type: {type(analysis)}")
 
-        if not analysis_text.strip():
-            logging.warning(f"No text found in analysis: {analysis}")
-            continue
-
-        individual_chunks.append(result)
-        combined_text += analysis_text.strip() + "\n\n"
+        if analysis_text.strip():
+            individual_chunks.append(result)
+            combined_text += analysis_text.strip() + "\n\n"
 
     return {
         "combined_analysis": combined_text.strip() if combined_text.strip() else None,
