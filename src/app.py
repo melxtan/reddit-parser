@@ -193,6 +193,17 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                             )
 
                             if analysis_results:
+                                st.success("Analysis completed!")
+                                combined_analysis_result = combine_analyses(analysis_results)
+                            
+                                if combined_analysis_result["combined_analysis"] is not None:
+                                    sections = combined_analysis_result["combined_analysis"].split("\n\n")
+                                    for section in sections:
+                                        if section.strip():
+                                            st.write(section)
+                            
+                                download_data = combined_analysis_result
+                                
                                 st.subheader("Download Analysis Results")
 
                                 analysis_json = json.dumps(download_data, indent=2)
