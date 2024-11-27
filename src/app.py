@@ -7,10 +7,7 @@ from datetime import datetime
 import pandas as pd
 import streamlit as st
 from scrape_reddit import ScrapeReddit
-
-import sys
-sys.path.append('./')
-from reddit_analysis import RedditAnalyzer, analyze_reddit_data
+from reddit_analysis import analyze_reddit_data
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
@@ -188,8 +185,8 @@ def main() -> None:
                     analysis_results = analyze_reddit_data(
                         post_data=st.session_state.post_data,
                         region_name=st.session_state.aws_creds["region"],
+                        max_workers=2,
                         rate_limit_per_second=0.5,
-                        rate_limit_sleep_time=10,
                         num_top_posts=20
                     )
                     st.session_state.analysis_results = analysis_results
