@@ -16,6 +16,8 @@ if "analysis_results" not in st.session_state:
     st.session_state.analysis_results = {}
 if "aws_creds" not in st.session_state:
     st.session_state.aws_creds = None
+if "task_containers" not in st.session_state:
+    st.session_state.task_containers = {}
 
 password_input = st.text_input("Enter password to access the app:", type="password", key="password_input")
 
@@ -94,6 +96,7 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                     scraper.destroy()
                     st.session_state.post_data = post_data
                     st.session_state.analysis_results = {}  # Reset analysis results
+                    st.session_state.task_containers = {}  # Reset task containers
                 except Exception as e:
                     st.error(f"An error occurred: {str(e)}")
                     logging.exception("An error occurred during scraping:")
@@ -166,70 +169,82 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
 
         # Analysis Section
         if st.session_state.aws_creds:
-                st.subheader("Reddit Post Analysis")
-                
-                if st.button("Analyze Reddit Posts"):
-                    try:
-                        os.environ["AWS_ACCESS_KEY_ID"] = st.session_state.aws_creds["access_key"]
-                        os.environ["AWS_SECRET_ACCESS_KEY"] = st.session_state.aws_creds["secret_key"]
-                        
-                        # Create placeholder containers for each task
-                        if 'task_containers' not in st.session_state:
-                            st.session_state.task_containers = {
-                                "title_and_post_text_analysis": st.empty(),
-                                "language_feature_extraction": st.empty(),
-                                "sentiment_color_tracking": st.empty(),
-                                "trend_analysis": st.empty(),
-                                "correlation_analysis": st.empty()
-                            }
-                        
-                        # Initialize or reset analysis results
-                        if 'analysis_results' not in st.session_state:
-                            st.session_state.analysis_results = {}
-                        
-                        # Initialize status messages
-                        for name, container in st.session_state.task_containers.items():
-                            container.info(f"Waiting to start {name.replace('_', ' ').title()}...")
-                        
-                        def update_task_status(task_name: str, result: Dict):
-                            container = st.session_state.task_containers[task_name]
-                            if 'error' in result:
-                                container.error(f"Error in {task_name.replace('_', ' ').title()}: {result['error']}")
-                            else:
-                                container.success(f"{task_name.replace('_', ' ').title()} completed!")
-                                st.session_state.analysis_results[task_name] = result
-                                
-                                # Create a new subheader and content for this task
-                                st.subheader(task_name.replace('_', ' ').title())
-                                st.write(result['analysis'])
-                                st.write("---")
-                        
-                        # Start analysis with callback
-                        analyze_reddit_data(
-                            post_data=st.session_state.post_data,
-                            callback=update_task_status,
-                            region_name=st.session_state.aws_creds["region"],
-                            rate_limit_per_second=0.5,
-                            num_top_posts=20
+            st.subheader("Reddit Post Analysis")
+            
+            if st.button("Analyze Reddit Posts"):
+                try:
+                    os.environ["AWS_ACCESS_KEY_ID"] = st.session_state.aws_creds["access_key"]
+                    os.environ["AWS_SECRET_ACCESS_KEY"] = st.session_state.aws_creds["secret_key"]
+                    
+                    # Create placeholder containers for each task
+                    st.session_state.task_containers = {
+                        "title_and_post_text_analysis": st.empty(),
+                        "language_feature_extraction": st.empty(),
+                        "sentiment_color_tracking": st.empty(),
+                        "trend_analysis": st.empty(),
+                        "correlation_analysis": st.empty()
+                    }
+                    
+                    # Reset analysis results
+                    st.session_state.analysis_results = {}
+                    
+                    # Initialize status messages
+                    for name, container in st.session_state.task_containers.items():
+                        container.info(f"Waiting to start {name.replace('_', ' ').title()}...")
+                    
+                    def update_task_status(task_name: str, result: dict):
+                        container = st.session_state.task_containers[task_name]
+                        if 'error' in result:
+                            container.error(f"Error in {task_name.replace('_', ' ').title()}: {result['error']}")
+                        else:
+                            container.success(f"{task_name.replace('_', ' ').title()} completed!")
+                            st.session_state.analysis_results[task_name] = result
+                            
+                            # Create a new subheader and content for this task
+                            st.subheader(task_name.replace('_', ' ').title())
+                            st.write(result['analysis'])
+                            st.write("---")
+                    
+                    # Start analysis with callback
+                    analyze_reddit_data(
+                        post_data=st.session_state.post_data,
+                        callback=update_task_status,
+                        region_name=st.session_state.aws_creds["region"],
+                        rate_limit_per_second=0.5,
+                        num_top_posts=20
+                    )
+                    
+                    # Show download button for complete results
+                    if st.session_state.analysis_results:
+                        analysis_json = json.dumps(st.session_state.analysis_results, indent=2)
+                        st.download_button(
+                            label="Download Complete Analysis (JSON)",
+                            data=analysis_json,
+                            file_name=f"{filename}_analysis.json",
+                            mime="application/json",
+                            key="analysis_json"
                         )
                         
-                        # Show download button for complete results
-                        if st.session_state.analysis_results:
-                            analysis_json = json.dumps(st.session_state.analysis_results, indent=2)
-                            st.download_button(
-                                label="Download Complete Analysis (JSON)",
-                                data=analysis_json,
-                                file_name=f"{filename}_analysis.json",
-                                mime="application/json",
-                                key="analysis_json"
-                            )
-                            
-                    except Exception as e:
-                        st.error(f"Analysis failed: {str(e)}")
-                        logging.exception("Analysis error:")
+                except Exception as e:
+                    st.error(f"Analysis failed: {str(e)}")
+                    logging.exception("Analysis error:")
             
-            # Display existing results
+            # Display existing results if any
             if st.session_state.analysis_results:
                 for task_name, result in st.session_state.analysis_results.items():
                     if 'error' not in result:
-                        st.subhe
+                        st.subheader(task_name.replace('_', ' ').title())
+                        st.write(result['analysis'])
+                        st.write("---")
+                
+                analysis_json = json.dumps(st.session_state.analysis_results, indent=2)
+                st.download_button(
+                    label="Download Complete Analysis (JSON)",
+                    data=analysis_json,
+                    file_name=f"{filename}_analysis.json",
+                    mime="application/json",
+                    key="analysis_json"
+                )
+
+else:
+    st.error("Incorrect password. Access denied.")
