@@ -13,6 +13,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(level
 
 if "post_data" not in st.session_state:
     st.session_state.post_data = None
+if "analysis_results" not in st.session_state:
+    st.session_state.analysis_results = None
 if "aws_creds" not in st.session_state:
     st.session_state.aws_creds = None
 
@@ -45,11 +47,11 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
 
     def main() -> None:
         st.title("Reddit Post Scraper")
-    
+
         search_query = st.text_input("Enter a search query:", key="search_query")
-    
+
         col1, col2 = st.columns(2)
-    
+
         with col1:
             search_option = st.selectbox(
                 "Select search option:",
@@ -63,7 +65,7 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                 }[x],
                 key="search_option"
             )
-    
+
         with col2:
             time_filter = st.selectbox(
                 "Select time filter:",
@@ -78,20 +80,20 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                 }[x],
                 key="time_filter"
             )
-    
+
         max_posts = st.number_input(
             "Maximum number of posts to scrape (0 for no limit):", min_value=0, value=10, key="max_posts"
         )
-    
+
         use_api = st.checkbox("Use Reddit API (faster, but may hit rate limits)", value=True, key="use_api")
-    
+
         log_level = st.selectbox(
             "Select log level:",
             ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
             index=1,
             key="log_level"
         )
-    
+
         log_level_map = {
             "DEBUG": logging.DEBUG,
             "INFO": logging.INFO,
@@ -99,7 +101,7 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
             "ERROR": logging.ERROR,
             "CRITICAL": logging.CRITICAL,
         }
-    
+
         if st.button("Scrape", key="scrape_button"):
             if search_query:
                 with st.spinner("Scraping data..."):
@@ -111,7 +113,7 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                             client_secret="UOtiC3y7HAAiNyF-90fVQvDqgarVJg",
                             user_agent="melxtan",
                         )
-    
+
                         st.info(f"Fetching posts. Max posts: {max_posts}")
                         post_urls = scraper.get_posts(
                             search_query,
@@ -119,10 +121,10 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                             search_option=search_option,
                             limit=max_posts,
                         )
-    
+
                         st.info(f"Fetching post info for {len(post_urls)} posts")
                         post_data = scraper.get_reddit_post_info(post_urls)
-    
+
                         scraper.destroy()
                         st.session_state.post_data = post_data
                     except Exception as e:
@@ -132,25 +134,25 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                         logging.exception("An error occurred during scraping:")
             else:
                 st.warning("Please enter a search query.")
-    
+
         if st.session_state.post_data:
             post_data = st.session_state.post_data
             df_data = [{**post, "comments": json.dumps(post["comments"])} for post in post_data]
             df = pd.DataFrame(df_data)
-    
+
             st.subheader("Summary")
             st.write(f"Number of posts retrieved: {len(df)}")
             st.write(f"Total comments: {df['num_comments'].sum()}")
             st.write(f"Average score: {df['score'].mean():.2f}")
-    
+
             st.subheader("Data Preview")
             st.dataframe(df)
-    
+
             col1, col2 = st.columns(2)
-    
+
             safe_query = search_query.replace(" ", "_").lower()[:30]
             filename = f"reddit_{safe_query}_{search_option}_{time_filter}"
-    
+
             with col1:
                 json_str = json.dumps(post_data, indent=2)
                 st.download_button(
@@ -160,7 +162,7 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                     mime="application/json",
                     key="post_data_json"
                 )
-    
+
             with col2:
                 csv_buffer = io.StringIO()
                 df.to_csv(csv_buffer, index=False)
@@ -172,46 +174,42 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                     mime="text/csv",
                     key="post_data_csv"
                 )
-    
-            if "analysis_results" not in st.session_state:
-                st.session_state.analysis_results = None
-    
+
             if st.session_state.analysis_results is None and st.session_state.post_data:
                 with st.spinner("Analyzing posts using Claude..."):
                     try:
                         os.environ["AWS_ACCESS_KEY_ID"] = st.session_state.aws_creds["access_key"]
                         os.environ["AWS_SECRET_ACCESS_KEY"] = st.session_state.aws_creds["secret_key"]
-    
+
                         st.info("Starting analysis...")
                         analysis_results = analyze_reddit_data(
                             post_data=st.session_state.post_data,
                             region_name=st.session_state.aws_creds["region"],
                             max_workers=2,
                             rate_limit_per_second=0.5,
-                            chunk_size=3
+                            num_top_posts=20
                         )
                         st.session_state.analysis_results = analysis_results
                     except Exception as e:
                         st.error(f"Analysis failed: {str(e)}")
                         logging.exception("Analysis error:")
-    
+
             if st.session_state.analysis_results:
-                st.subheader("Individual Analysis Chunks")
-                for chunk in st.session_state.analysis_results:
-                    st.write(f"Chunk ID: {chunk.get('chunk_id')}")
-                    st.write(chunk.get("analysis", {}))
+                st.subheader("Reddit Post Analysis")
+                for task_result in st.session_state.analysis_results:
+                    st.subheader(f"Task {task_result['task_number']} Analysis")
+                    st.write(task_result['analysis'])
                     st.write("---")
-    
+
                 st.subheader("Download Analysis Results")
-                col1, col2 = st.columns(2)
-    
+                
                 analysis_json = json.dumps(st.session_state.analysis_results, indent=2)
                 st.download_button(
-                    label="Download Analysis Chunks (JSON)",
+                    label="Download Analysis (JSON)",
                     data=analysis_json,
-                    file_name=f"{filename}_analysis_chunks.json",
+                    file_name=f"{filename}_analysis.json",
                     mime="application/json",
-                    key="analysis_chunks_json"
+                    key="analysis_json"
                 )
 
     if __name__ == "__main__":
