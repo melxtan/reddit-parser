@@ -68,7 +68,7 @@ class RedditAnalyzer:
                             "content": f"Please analyze this Reddit data according to the following protocol:\n\n{json.dumps(posts, indent=2)}\n\nProtocol:\nTask {task_number}: {self.template.split('\n')[task_number-1]}"
                         }
                     ],
-                    "temperature": 0.7,
+                    "temperature": 0.3,
                     "top_k": 250,
                     "top_p": 0.999,
                     "stop_sequences": []
