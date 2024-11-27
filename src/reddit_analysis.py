@@ -1,9 +1,8 @@
 import json
 import logging
 import time
-from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Dict, Union
+from typing import List, Dict
 import boto3
 from botocore.config import Config
 import tenacity
@@ -137,56 +136,3 @@ def analyze_reddit_data(post_data: List[Dict],
     )
     
     return analyzer.analyze_posts(post_data, chunk_size)
-
-def combine_analyses(results: List[Dict]) -> Dict[str, Union[str, List[Dict], Dict]]:
-    """Combine multiple chunk analyses into one coherent analysis."""
-    combined_text = ""
-    individual_chunks = []
-
-    for result in results:
-        if not result or not result.get("analysis"):
-            logging.warning("Empty result or missing analysis encountered, skipping.")
-            continue
-
-        analysis = result.get("analysis", {})
-        analysis_text = ""
-
-        if isinstance(analysis, str):
-            analysis_text = analysis
-        elif isinstance(analysis, dict):
-            content = analysis.get("content")
-            if isinstance(content, list):
-                analysis_text = "\n".join(
-                    item.get("text", "")
-                    for item in content
-                    if isinstance(item, dict) and item.get("type") == "text"
-                )
-            elif isinstance(content, str):
-                analysis_text = content
-            elif "text" in analysis:
-                analysis_text = analysis["text"]
-            else:
-                logging.warning(f"Unexpected analysis structure: {analysis}")
-        elif isinstance(analysis, list):
-            # Handle the case where the analysis is a list
-            analysis_text = "\n".join(
-                item.get("text", "")
-                for item in analysis
-                if isinstance(item, dict) and item.get("type") == "text"
-            )
-        else:
-            logging.warning(f"Unknown analysis type: {type(analysis)}")
-
-        if analysis_text.strip():
-            individual_chunks.append(result)
-            combined_text += analysis_text.strip() + "\n\n"
-
-    return {
-        "combined_analysis": combined_text.strip() if combined_text.strip() else None,
-        "individual_chunks": individual_chunks,
-        "metadata": {
-            "total_posts_analyzed": sum(r.get("posts_analyzed", 0) for r in individual_chunks),
-            "analysis_timestamp": datetime.now().isoformat(),
-            "number_of_chunks": len(individual_chunks)
-        }
-    }
