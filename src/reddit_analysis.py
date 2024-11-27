@@ -1,9 +1,10 @@
 import json
 import logging
 import time
-from typing import List, Dict, Callable
+from typing import List, Dict, Callable, Tuple
 import boto3
 from botocore.config import Config
+import re
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -43,6 +44,38 @@ class RedditAnalyzer:
             logger.error(f"Error loading template: {str(e)}")
             raise
 
+    def _extract_tag_content(self, content: str, tag: str) -> str:
+        """Extract content between specified XML tags"""
+        pattern = f"<{tag}>(.*?)</{tag}>"
+        match = re.search(pattern, content, re.DOTALL)
+        return match.group(1).strip() if match else ""
+
+    def _extract_task_components(self, task_name: str) -> Dict[str, str]:
+        """
+        Extract all components of a task section
+        Returns dict with task, requirements, role, context, protocol, and output format
+        """
+        # Extract the entire task section
+        task_pattern = f"<{task_name}>(.*?)</{task_name}>"
+        task_match = re.search(task_pattern, self.template, re.DOTALL)
+        
+        if not task_match:
+            raise ValueError(f"Could not find task section for {task_name}")
+            
+        task_content = task_match.group(1).strip()
+        
+        # Extract individual components
+        components = {
+            'task': self._extract_tag_content(task_content, 'task'),
+            'requirements': self._extract_tag_content(task_content, 'requirements'),
+            'role': self._extract_tag_content(task_content, 'role'),
+            'context': self._extract_tag_content(task_content, 'context'),
+            'protocol': self._extract_tag_content(task_content, 'detailed_analysis_protocol'),
+            'output_format': self._extract_tag_content(task_content, 'output_example')
+        }
+        
+        return components
+
     def _rate_limit(self):
         current_time = time.time()
         time_since_last_request = current_time - self._last_request_time
@@ -55,9 +88,26 @@ class RedditAnalyzer:
         max_retries = 8
         base_delay = 10
         
+        try:
+            components = self._extract_task_components(task_name)
+        except ValueError as e:
+            logger.error(f"Error extracting task components: {str(e)}")
+            raise
+        
         for attempt in range(max_retries):
             try:
                 self._rate_limit()
+                
+                prompt = (
+                    f"{components['role']}\n\n"
+                    f"Task: {components['task']}\n"
+                    f"Context: {components['context']}\n\n"
+                    f"Requirements: {components['requirements']}\n\n"
+                    f"Analysis Protocol:\n{components['protocol']}\n\n"
+                    f"You must format your response EXACTLY like this example:\n{components['output_format']}\n\n"
+                    f"Do not deviate from this format or add any additional explanations.\n\n"
+                    f"Data to analyze:\n{json.dumps(posts, indent=2)}"
+                )
                 
                 body = {
                     "anthropic_version": "bedrock-2023-05-31",
@@ -65,7 +115,7 @@ class RedditAnalyzer:
                     "messages": [
                         {
                             "role": "user",
-                            "content": f"Please analyze this Reddit data according to the following protocol:\n\n{json.dumps(posts, indent=2)}\n\nProtocol:\nTask {task_number}: {self.template.split('\n')[task_number-1]}"
+                            "content": prompt
                         }
                     ],
                     "temperature": 0.3,
@@ -110,7 +160,7 @@ class RedditAnalyzer:
             try:
                 result = self._analyze_task(top_posts, task_name, task_number)
                 logger.info(f"Successfully completed {task_name}")
-                callback(task_name, result)  # Call callback with result
+                callback(task_name, result)
             except Exception as e:
                 logger.error(f"Failed to analyze task {task_name}: {str(e)}")
                 error_result = {
@@ -119,7 +169,7 @@ class RedditAnalyzer:
                     'error': str(e),
                     'posts_analyzed': 0
                 }
-                callback(task_name, error_result)  # Call callback with error
+                callback(task_name, error_result)
 
 def analyze_reddit_data(post_data: List[Dict], 
                        callback: Callable[[str, Dict], None],
