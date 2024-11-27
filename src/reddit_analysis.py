@@ -1,7 +1,7 @@
 import json
 import logging
 import time
-from typing import List, Dict
+from typing import List, Dict, Callable
 import boto3
 from botocore.config import Config
 
@@ -25,11 +25,8 @@ class RedditAnalyzer:
         
         self.rate_limit_per_second = rate_limit_per_second
         self._last_request_time = 0
-        
-        # Load template during initialization
         self.template = self._load_prompt_template()
         
-        # Define tasks
         self.tasks = [
             (1, "title_and_post_text_analysis"),
             (2, "language_feature_extraction"),
@@ -39,7 +36,6 @@ class RedditAnalyzer:
         ]
 
     def _load_prompt_template(self):
-        """Load the prompt template from current directory"""
         try:
             with open('prompts.txt', 'r', encoding='utf-8') as file:
                 return file.read()
@@ -48,7 +44,6 @@ class RedditAnalyzer:
             raise
 
     def _rate_limit(self):
-        """Implement rate limiting with wait"""
         current_time = time.time()
         time_since_last_request = current_time - self._last_request_time
         if time_since_last_request < (1 / self.rate_limit_per_second):
@@ -57,7 +52,6 @@ class RedditAnalyzer:
         self._last_request_time = time.time()
 
     def _analyze_task(self, posts: List[Dict], task_name: str, task_number: int) -> Dict:
-        """Analyze a set of Reddit posts for a specific task with exponential backoff"""
         max_retries = 5
         base_delay = 4
         
@@ -105,38 +99,36 @@ class RedditAnalyzer:
                 logger.warning(f"Attempt {attempt + 1} failed for task {task_name}, retrying in {delay} seconds...")
                 time.sleep(delay)
             
-    def analyze_posts(self, posts: List[Dict], num_top_posts: int = 20) -> Dict[str, Dict]:
-        """Analyze Reddit posts sequentially with individual task results"""
-        # Sort posts by score
+    def analyze_posts(self, posts: List[Dict], callback: Callable[[str, Dict], None], num_top_posts: int = 20):
+        """Analyze Reddit posts sequentially and call the callback with results as they complete"""
         sorted_posts = sorted(posts, key=lambda x: x['score'], reverse=True)
         top_posts = sorted_posts[:num_top_posts]
         
-        results = {}
         logger.info(f"Starting analysis of {len(top_posts)} top posts")
         
         for task_number, task_name in self.tasks:
             try:
                 result = self._analyze_task(top_posts, task_name, task_number)
-                results[task_name] = result
                 logger.info(f"Successfully completed {task_name}")
+                callback(task_name, result)  # Call callback with result
             except Exception as e:
                 logger.error(f"Failed to analyze task {task_name}: {str(e)}")
-                results[task_name] = {
+                error_result = {
                     'task_name': task_name,
                     'task_number': task_number,
                     'error': str(e),
                     'posts_analyzed': 0
                 }
-                
-        return results
+                callback(task_name, error_result)  # Call callback with error
 
 def analyze_reddit_data(post_data: List[Dict], 
+                       callback: Callable[[str, Dict], None],
                        region_name: str = "us-west-2",
                        rate_limit_per_second: float = 0.5,
-                       num_top_posts: int = 20) -> Dict[str, Dict]:
+                       num_top_posts: int = 20):
     analyzer = RedditAnalyzer(
         region_name=region_name,
         rate_limit_per_second=rate_limit_per_second
     )
     
-    return analyzer.analyze_posts(post_data, num_top_posts)
+    analyzer.analyze_posts(post_data, callback, num_top_posts)
