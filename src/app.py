@@ -193,29 +193,6 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                             )
 
                             if analysis_results:
-                                st.success("Analysis completed!")
-                                combined_analysis = combine_analyses(analysis_results)
-
-                                if combined_analysis:
-                                    sections = combined_analysis.split("\n\n")
-                                    for section in sections:
-                                        if section.strip():
-                                            if section.strip()[0].isdigit():
-                                                with st.expander(section.split('\n')[0]):
-                                                    st.write("\n".join(section.split('\n')[1:]))
-                                            else:
-                                                st.write(section)
-
-                                download_data = {
-                                    "combined_analysis": combined_analysis,
-                                    "individual_chunks": analysis_results,
-                                    "metadata": {
-                                        "total_posts_analyzed": sum(r.get('posts_analyzed', 0) for r in analysis_results),
-                                        "analysis_timestamp": datetime.now().isoformat(),
-                                        "number_of_chunks": len(analysis_results)
-                                    }
-                                }
-
                                 st.subheader("Download Analysis Results")
 
                                 analysis_json = json.dumps(download_data, indent=2)
