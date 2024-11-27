@@ -28,8 +28,6 @@ class RedditAnalyzer:
         self.rate_limit_per_second = rate_limit_per_second
         self._last_request_time = 0
         self.template = self._load_prompt_template()
-        
-        # Store results from previous tasks
         self.analysis_results = defaultdict(dict)
         
         self.tasks = [
@@ -49,13 +47,11 @@ class RedditAnalyzer:
             raise
 
     def _extract_tag_content(self, content: str, tag: str) -> str:
-        """Extract content between specified XML tags"""
         pattern = f"<{tag}>(.*?)</{tag}>"
         match = re.search(pattern, content, re.DOTALL)
         return match.group(1).strip() if match else ""
 
     def _extract_task_components(self, task_name: str) -> Dict[str, str]:
-        """Extract all components of a task section"""
         task_pattern = f"<{task_name}>(.*?)</{task_name}>"
         task_match = re.search(task_pattern, self.template, re.DOTALL)
         
@@ -83,6 +79,34 @@ class RedditAnalyzer:
             time.sleep(sleep_time)
         self._last_request_time = time.time()
 
+    def _format_previous_results(self) -> str:
+        """Format previous results in a concise way for correlation analysis"""
+        formatted_results = "\nPrevious Analysis Results Summary:\n"
+        
+        # Map of tasks to their relevant sections
+        task_sections = {
+            "title_and_post_text_analysis": ["Purpose"],
+            "language_feature_extraction": ["Descriptive adjective", "Product needs description phrases", "Professional terminology usage"],
+            "sentiment_color_tracking": ["Overall_sentiment", "Contextual sentiment interpretation"],
+            "trend_analysis": ["Post publication time distribution", "Comment peak periods", "Discussion activity variations", "Trend Prediction"]
+        }
+        
+        for task_name, sections in task_sections.items():
+            if task_name in self.analysis_results:
+                result = self.analysis_results[task_name]['analysis']
+                formatted_results += f"\n{task_name}:\n"
+                
+                # Extract relevant sections using regex
+                for section in sections:
+                    pattern = f"{section}.*?(?=\n\n|\Z)"
+                    matches = re.findall(pattern, result, re.DOTALL)
+                    if matches:
+                        # Convert matches[0] to string if it's a list
+                        section_content = str(matches[0]) if isinstance(matches[0], list) else matches[0]
+                        formatted_results += f"- {section_content.strip()}\n"
+        
+        return formatted_results
+
     def _analyze_task(self, posts: List[Dict], task_name: str, task_number: int) -> Dict:
         max_retries = 8
         base_delay = 10
@@ -97,28 +121,24 @@ class RedditAnalyzer:
             try:
                 self._rate_limit()
                 
-                # For correlation analysis, include results from previous tasks
+                # For correlation analysis, include summarized previous results
                 previous_results = ""
                 if task_name == "correlation_analysis":
-                    previous_results = "\nPrevious analysis results:\n"
-                    for prev_task in ["title_and_post_text_analysis", "language_feature_extraction", 
-                                    "sentiment_color_tracking", "trend_analysis"]:
-                        if prev_task in self.analysis_results:
-                            previous_results += f"\n{prev_task} results:\n"
-                            previous_results += self.analysis_results[prev_task]['analysis']
-                            previous_results += "\n"
+                    previous_results = self._format_previous_results()
                 
                 prompt = (
                     f"{components['role']}\n\n"
                     f"Task: {components['task']}\n"
                     f"Context: {components['context']}\n\n"
-                    f"Requirements: {components['requirements']}\n\n"
                     f"Analysis Protocol:\n{components['protocol']}\n\n"
                     f"You must format your response EXACTLY like this example:\n{components['output_format']}\n\n"
                     f"Do not deviate from this format or add any additional explanations.\n\n"
                     f"Data to analyze:\n{json.dumps(posts, indent=2)}"
-                    f"{previous_results}"  # Include previous results for correlation analysis
+                    f"{previous_results}"
                 )
+                
+                # Log prompt length for debugging
+                logger.debug(f"Prompt length for {task_name}: {len(prompt)} characters")
                 
                 body = {
                     "anthropic_version": "bedrock-2023-05-31",
@@ -151,7 +171,7 @@ class RedditAnalyzer:
                     'posts_analyzed': len(posts)
                 }
                 
-                # Store the result for potential use in correlation analysis
+                # Store the result
                 self.analysis_results[task_name] = result
                 
                 return result
@@ -172,7 +192,6 @@ class RedditAnalyzer:
         
         logger.info(f"Starting analysis of {len(top_posts)} top posts")
         
-        # Clear previous results at the start of a new analysis
         self.analysis_results.clear()
         
         for task_number, task_name in self.tasks:
