@@ -100,7 +100,7 @@ class RedditAnalyzer:
             logger.error(f"Error type: {type(e).__name__}")
             raise
             
-    def analyze_posts(self, posts: List[Dict], num_top_posts: int = 20) -> List[Dict]:
+    def analyze_posts(self, posts: List[Dict], num_top_posts: int = 10) -> List[Dict]:
         """Analyze the top N Reddit posts based on score, highest to lowest"""
         # Sort the posts by score, highest to lowest
         posts = sorted(posts, key=lambda x: x['score'], reverse=True)
