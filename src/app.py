@@ -7,7 +7,7 @@ from datetime import datetime
 import pandas as pd
 import streamlit as st
 from scrape_reddit import ScrapeReddit
-from reddit_analysis import analyze_reddit_data
+from reddit_analysis import RedditAnalyzer, analyze_reddit_data
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
