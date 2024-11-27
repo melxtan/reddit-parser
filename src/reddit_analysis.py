@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 class RedditAnalyzer:
     def __init__(self, region_name="us-west-2", rate_limit_per_second=0.2, search_query="", aws_access_key=None, aws_secret_key=None):
-        # Initialize AnthropicBedrock client with credentials if provided
         client_kwargs = {"aws_region": region_name}
         if aws_access_key and aws_secret_key:
             client_kwargs.update({
@@ -25,6 +24,13 @@ class RedditAnalyzer:
         self.rate_limit_per_second = rate_limit_per_second
         self._last_request_time = 0
         self.compiler = Compiler()
+        
+        # Add helpers for templates
+        self.helpers = {
+            'json': json.dumps,
+            'concat': lambda *args: ''.join([str(arg) for arg in args])
+        }
+        
         self.templates = self._load_templates()
         self.analysis_results = defaultdict(dict)
         self.search_query = search_query
@@ -41,6 +47,7 @@ class RedditAnalyzer:
         """Load and compile all Handlebars templates"""
         templates = {}
         try:
+            # Compile base template with helpers
             with open('templates/base.hbs', 'r', encoding='utf-8') as file:
                 source = file.read()
                 templates['base'] = self.compiler.compile(source)
@@ -57,6 +64,7 @@ class RedditAnalyzer:
             for task in task_files:
                 with open(f'templates/{task}.hbs', 'r', encoding='utf-8') as file:
                     source = file.read()
+                    # Compile each template with helpers
                     templates[task] = self.compiler.compile(source)
             
             return templates
@@ -65,46 +73,12 @@ class RedditAnalyzer:
             logger.error(f"Error loading templates: {str(e)}")
             raise
 
-    def _rate_limit(self):
-        current_time = time.time()
-        time_since_last_request = current_time - self._last_request_time
-        if time_since_last_request < (1 / self.rate_limit_per_second):
-            sleep_time = (1 / self.rate_limit_per_second) - time_since_last_request
-            time.sleep(sleep_time)
-        self._last_request_time = time.time()
-
-    def _format_previous_results(self) -> str:
-        """Format previous results in a concise way for correlation analysis"""
-        formatted_results = "\nPrevious Analysis Results Summary:\n"
-        
-        # Map of tasks to their relevant sections
-        task_sections = {
-            "title_and_post_text_analysis": ["Purpose"],
-            "language_feature_extraction": ["Descriptive adjective", "Product needs description phrases", "Professional terminology usage"],
-            "sentiment_color_tracking": ["Overall_sentiment", "Contextual sentiment interpretation"],
-            "trend_analysis": ["Post publication time distribution", "Comment peak periods", "Discussion activity variations", "Trend Prediction"]
-        }
-        
-        for task_name, sections in task_sections.items():
-            if task_name in self.analysis_results:
-                result = self.analysis_results[task_name]['analysis']
-                formatted_results += f"\n{task_name}:\n"
-                
-                # Extract relevant sections using regex
-                for section in sections:
-                    pattern = fr"{section}.*?(?=\n\n|$)"
-                    matches = re.findall(pattern, result, re.DOTALL)
-                    if matches:
-                        section_content = str(matches[0]) if isinstance(matches[0], list) else matches[0]
-                        formatted_results += f"- {section_content.strip()}\n"
-        
-        return formatted_results
-
     def _get_task_prompt(self, task_name: str, context: Dict) -> str:
         """Generate prompt using Handlebars template"""
         try:
             template = self.templates[task_name]
-            return template(context)
+            # Pass helpers when executing the template
+            return template(context, helpers=self.helpers)
         except Exception as e:
             logger.error(f"Error generating prompt for {task_name}: {str(e)}")
             raise
