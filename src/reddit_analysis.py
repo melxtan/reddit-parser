@@ -107,6 +107,47 @@ class RedditAnalyzer:
         
         return formatted_results
 
+    def _clean_response_content(self, response_body) -> str:
+        """Clean and extract text content from API response"""
+        try:
+            # Handle dictionary response
+            if isinstance(response_body, dict):
+                if 'content' in response_body:
+                    if isinstance(response_body['content'], list):
+                        return response_body['content'][0]['text'] if response_body['content'] else ''
+                    elif isinstance(response_body['content'], dict):
+                        return response_body['content'].get('text', '')
+                    else:
+                        return str(response_body['content'])
+                
+                # Handle messages format
+                if 'messages' in response_body and response_body['messages']:
+                    message = response_body['messages'][0]
+                    if isinstance(message, dict):
+                        if 'content' in message:
+                            if isinstance(message['content'], list):
+                                return message['content'][0]['text'] if message['content'] else ''
+                            elif isinstance(message['content'], dict):
+                                return message['content'].get('text', '')
+                            else:
+                                return str(message['content'])
+            
+            # Handle list response
+            elif isinstance(response_body, list) and response_body:
+                first_item = response_body[0]
+                if isinstance(first_item, dict):
+                    if 'text' in first_item:
+                        return first_item['text']
+                    elif 'content' in first_item:
+                        return first_item['content']
+            
+            # If we can't parse it in a specific way, convert to string
+            return str(response_body)
+            
+        except Exception as e:
+            logger.error(f"Error cleaning response content: {str(e)}")
+            return str(response_body)
+
     def _analyze_task(self, posts: List[Dict], task_name: str, task_number: int) -> Dict:
         max_retries = 8
         base_delay = 10
@@ -175,19 +216,8 @@ class RedditAnalyzer:
                 
                 response_body = json.loads(response['body'].read().decode())
                 
-                # Handle different response formats
-                if isinstance(response_body, dict):
-                    content = response_body.get('content', '')
-                elif isinstance(response_body, list):
-                    content = response_body[0].get('content', '') if response_body else ''
-                else:
-                    content = str(response_body)
-                
-                # Ensure content is a string
-                if isinstance(content, list):
-                    content = ' '.join(str(item) for item in content)
-                elif not isinstance(content, str):
-                    content = str(content)
+                # Clean the response content
+                content = self._clean_response_content(response_body)
                 
                 result = {
                     'task_name': task_name,
