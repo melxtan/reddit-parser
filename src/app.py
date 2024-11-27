@@ -194,23 +194,22 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
 
                             if analysis_results:
                                 st.success("Analysis completed!")
-                                combined_analysis_result = combine_analyses(analysis_results)
                             
-                                st.success("Analysis completed!")
-                                combined_analysis_result = combine_analyses(analysis_results)
-                            
-                                if combined_analysis_result["combined_analysis"] is not None:
-                                    sections = combined_analysis_result["combined_analysis"].split("\n\n")
-                                    for section in sections:
-                                        if section.strip():
-                                            st.write(section)
+                                st.subheader("Individual Analysis Chunks")
+                                for chunk in analysis_results:
+                                    st.write(f"Chunk ID: {chunk.get('chunk_id')}")
+                                    st.write(chunk.get("analysis", {}))
+                                    st.write("---")
                             
                                 if combined_analysis_result["individual_chunks"]:
-                                    st.subheader("Individual Analysis Chunks")
-                                    for chunk in combined_analysis_result["individual_chunks"]:
-                                        st.write(f"Chunk ID: {chunk.get('chunk_id')}")
-                                        st.write(chunk.get("analysis", {}))
-                                        st.write("---")
+                                analysis_json = json.dumps(analysis_results, indent=2)
+                                st.download_button(
+                                    label="Download Analysis Chunks (JSON)",
+                                    data=analysis_json,
+                                    file_name=f"{filename}_analysis_chunks.json",
+                                    mime="application/json",
+                                    key="analysis_chunks_json"
+                                )
                                 
                                 st.subheader("Download Analysis Results")
 
