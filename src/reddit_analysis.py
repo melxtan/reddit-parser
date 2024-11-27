@@ -1,33 +1,31 @@
 import json
 import logging
 import time
-from typing import List, Dict, Callable, Tuple
-import boto3
-from botocore.config import Config
 import re
+from typing import List, Dict, Callable, Tuple
+from anthropic import AnthropicBedrock
+from pybars import Compiler
 from collections import defaultdict
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
 class RedditAnalyzer:
-    def __init__(self, region_name="us-west-2", rate_limit_per_second=0.2, search_query=""):
-        config = Config(
-            region_name=region_name,
-            retries=dict(
-                max_attempts=8,
-                mode="adaptive"
-            )
-        )
-        
-        self.bedrock = boto3.client(
-            service_name="bedrock-runtime",
-            config=config
-        )
+    def __init__(self, region_name="us-west-2", rate_limit_per_second=0.2, search_query="", aws_access_key=None, aws_secret_key=None):
+        # Initialize AnthropicBedrock client with credentials if provided
+        client_kwargs = {"aws_region": region_name}
+        if aws_access_key and aws_secret_key:
+            client_kwargs.update({
+                "aws_access_key": aws_access_key,
+                "aws_secret_key": aws_secret_key
+            })
+            
+        self.client = AnthropicBedrock(**client_kwargs)
         
         self.rate_limit_per_second = rate_limit_per_second
         self._last_request_time = 0
-        self.template = self._load_prompt_template()
+        self.compiler = Compiler()
+        self.templates = self._load_templates()
         self.analysis_results = defaultdict(dict)
         self.search_query = search_query
         
@@ -39,43 +37,33 @@ class RedditAnalyzer:
             (5, "correlation_analysis")
         ]
 
-    def _load_prompt_template(self):
+    def _load_templates(self):
+        """Load and compile all Handlebars templates"""
+        templates = {}
         try:
-            with open('prompts.txt', 'r', encoding='utf-8') as file:
-                return file.read()
-        except Exception as e:
-            logger.error(f"Error loading template: {str(e)}")
-            raise
-
-    def _extract_tag_content(self, content: str, tag: str) -> str:
-        pattern = f"<{tag}>(.*?)</{tag}>"
-        match = re.search(pattern, content, re.DOTALL)
-        return match.group(1).strip() if match else ""
-
-    def _extract_task_components(self, task_name: str) -> Dict[str, str]:
-        task_pattern = f"<{task_name}>(.*?)</{task_name}>"
-        task_match = re.search(task_pattern, self.template, re.DOTALL)
-        
-        if not task_match:
-            raise ValueError(f"Could not find task section for {task_name}")
+            with open('templates/base.hbs', 'r', encoding='utf-8') as file:
+                source = file.read()
+                templates['base'] = self.compiler.compile(source)
             
-        task_content = task_match.group(1).strip()
-        
-        # Extract components and replace {search_query} with actual query
-        components = {
-            'task': self._extract_tag_content(task_content, 'task'),
-            'requirements': self._extract_tag_content(task_content, 'requirements'),
-            'role': self._extract_tag_content(task_content, 'role'),
-            'context': self._extract_tag_content(task_content, 'context'),
-            'protocol': self._extract_tag_content(task_content, 'detailed_analysis_protocol'),
-            'output_format': self._extract_tag_content(task_content, 'output_example')
-        }
-        
-        # Replace {search_query} in each component
-        for key in components:
-            components[key] = components[key].replace('{search_query}', self.search_query)
-        
-        return components
+            # Load individual task templates
+            task_files = [
+                'title_and_post_text_analysis',
+                'language_feature_extraction',
+                'sentiment_color_tracking',
+                'trend_analysis',
+                'correlation_analysis'
+            ]
+            
+            for task in task_files:
+                with open(f'templates/{task}.hbs', 'r', encoding='utf-8') as file:
+                    source = file.read()
+                    templates[task] = self.compiler.compile(source)
+            
+            return templates
+            
+        except Exception as e:
+            logger.error(f"Error loading templates: {str(e)}")
+            raise
 
     def _rate_limit(self):
         current_time = time.time()
@@ -107,123 +95,50 @@ class RedditAnalyzer:
                     pattern = fr"{section}.*?(?=\n\n|$)"
                     matches = re.findall(pattern, result, re.DOTALL)
                     if matches:
-                        # Convert matches[0] to string if it's a list
                         section_content = str(matches[0]) if isinstance(matches[0], list) else matches[0]
                         formatted_results += f"- {section_content.strip()}\n"
         
         return formatted_results
 
-    def _clean_response_content(self, response_body) -> str:
-        """Clean and extract text content from API response"""
+    def _get_task_prompt(self, task_name: str, context: Dict) -> str:
+        """Generate prompt using Handlebars template"""
         try:
-            # Handle dictionary response
-            if isinstance(response_body, dict):
-                if 'content' in response_body:
-                    if isinstance(response_body['content'], list):
-                        return response_body['content'][0]['text'] if response_body['content'] else ''
-                    elif isinstance(response_body['content'], dict):
-                        return response_body['content'].get('text', '')
-                    else:
-                        return str(response_body['content'])
-                
-                # Handle messages format
-                if 'messages' in response_body and response_body['messages']:
-                    message = response_body['messages'][0]
-                    if isinstance(message, dict):
-                        if 'content' in message:
-                            if isinstance(message['content'], list):
-                                return message['content'][0]['text'] if message['content'] else ''
-                            elif isinstance(message['content'], dict):
-                                return message['content'].get('text', '')
-                            else:
-                                return str(message['content'])
-            
-            # Handle list response
-            elif isinstance(response_body, list) and response_body:
-                first_item = response_body[0]
-                if isinstance(first_item, dict):
-                    if 'text' in first_item:
-                        return first_item['text']
-                    elif 'content' in first_item:
-                        return first_item['content']
-            
-            # If we can't parse it in a specific way, convert to string
-            return str(response_body)
-            
+            template = self.templates[task_name]
+            return template(context)
         except Exception as e:
-            logger.error(f"Error cleaning response content: {str(e)}")
-            return str(response_body)
+            logger.error(f"Error generating prompt for {task_name}: {str(e)}")
+            raise
 
     def _analyze_task(self, posts: List[Dict], task_name: str, task_number: int) -> Dict:
         max_retries = 8
         base_delay = 10
         
-        try:
-            components = self._extract_task_components(task_name)
-        except ValueError as e:
-            logger.error(f"Error extracting task components: {str(e)}")
-            raise
-        
         for attempt in range(max_retries):
             try:
                 self._rate_limit()
                 
-                # Create different prompts for correlation vs other tasks
-                if task_name == "correlation_analysis":
-                    try:
-                        previous_results = self._format_previous_results()
-                        prompt = (
-                            f"{components['role']}\n\n"
-                            f"Task: {components['task']}\n"
-                            f"Context: {components['context']}\n\n"
-                            f"Analysis Protocol:\n{components['protocol']}\n\n"
-                            f"You must format your response EXACTLY like this example:\n{components['output_format']}\n\n"
-                            f"Do not deviate from this format or add any additional explanations.\n\n"
-                            f"Previous analysis results to correlate:\n{previous_results}"
-                        )
-                    except Exception as e:
-                        logger.error(f"Error formatting previous results: {str(e)}")
-                        raise
-                else:
-                    prompt = (
-                        f"{components['role']}\n\n"
-                        f"Task: {components['task']}\n"
-                        f"Context: {components['context']}\n\n"
-                        f"Analysis Protocol:\n{components['protocol']}\n\n"
-                        f"You must format your response EXACTLY like this example:\n{components['output_format']}\n\n"
-                        f"Do not deviate from this format or add any additional explanations.\n\n"
-                        f"Data to analyze:\n{json.dumps(posts, indent=2)}"
-                    )
-                
-                # Log prompt length for debugging
-                logger.debug(f"Prompt length for {task_name}: {len(prompt)} characters")
-                
-                body = {
-                    "anthropic_version": "bedrock-2024-02-01",
-                    "max_tokens": 4096,
-                    "messages": [
-                        {
-                            "role": "user",
-                            "content": prompt
-                        }
-                    ],
-                    "temperature": 0.3,
-                    "top_k": 250,
-                    "top_p": 0.999,
-                    "stop_sequences": []
+                # Create context for templates
+                context = {
+                    'search_query': self.search_query,
+                    'posts': posts,
+                    'previous_results': self._format_previous_results() if task_name == "correlation_analysis" else None
                 }
                 
-                response = self.bedrock.invoke_model(
-                    modelId="anthropic.claude-3-5-haiku-20241022-v1:0",
-                    body=json.dumps(body),
-                    accept="application/json",
-                    contentType="application/json"
+                # Generate prompt using template
+                prompt = self._get_task_prompt(task_name, context)
+                
+                # Use AnthropicBedrock client with correct syntax
+                message = self.client.messages.create(
+                    model="anthropic.claude-3-5-sonnet-20241022-v1:0",
+                    max_tokens=4096,
+                    messages=[{
+                        "role": "user",
+                        "content": prompt
+                    }]
                 )
                 
-                response_body = json.loads(response['body'].read().decode())
-                
-                # Clean the response content
-                content = self._clean_response_content(response_body)
+                # Extract content from the message
+                content = message.content[0].text
                 
                 result = {
                     'task_name': task_name,
@@ -232,9 +147,7 @@ class RedditAnalyzer:
                     'posts_analyzed': len(posts)
                 }
                 
-                # Store the result
                 self.analysis_results[task_name] = result
-                
                 return result
                 
             except Exception as e:
@@ -275,11 +188,15 @@ def analyze_reddit_data(post_data: List[Dict],
                        region_name: str = "us-west-2",
                        rate_limit_per_second: float = 0.2,
                        num_top_posts: int = 10,
-                       search_query: str = ""):
+                       search_query: str = "",
+                       aws_access_key: str = None,
+                       aws_secret_key: str = None):
     analyzer = RedditAnalyzer(
         region_name=region_name,
         rate_limit_per_second=rate_limit_per_second,
-        search_query=search_query
+        search_query=search_query,
+        aws_access_key=aws_access_key,
+        aws_secret_key=aws_secret_key
     )
     
     analyzer.analyze_posts(post_data, callback, num_top_posts)
