@@ -217,27 +217,16 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                                 }
 
                                 st.subheader("Download Analysis Results")
-                                col1, col2 = st.columns(2)
 
-                                with col1:
-                                    analysis_json = json.dumps(download_data, indent=2)
-                                    st.download_button(
-                                        label="Download Full Analysis (JSON)",
-                                        data=analysis_json,
-                                        file_name=f"{filename}_analysis_full.json",
-                                        mime="application/json",
-                                        key="analysis_json"
-                                    )
+                                analysis_json = json.dumps(download_data, indent=2)
+                                st.download_button(
+                                    label="Download Full Analysis (JSON)",
+                                    data=analysis_json,
+                                    file_name=f"{filename}_analysis_full.json",
+                                    mime="application/json",
+                                    key="analysis_json"
+                                )
 
-                                with col2:
-                                    json_str = json.dumps(post_data, indent=2)
-                                    st.download_button(
-                                        label="Download JSON",
-                                        data=json_str,
-                                        file_name=f"{filename}.json",
-                                        mime="application/json",
-                                        key="post_data_json_2"
-                                    )
                             else:
                                 st.warning("No analysis results were returned")
                         except Exception as e:
