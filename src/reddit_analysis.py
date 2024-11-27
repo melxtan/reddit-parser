@@ -138,9 +138,10 @@ def analyze_reddit_data(post_data: List[Dict],
     
     return analyzer.analyze_posts(post_data, chunk_size)
 
-def combine_analyses(results: List[Dict]) -> str:
+def combine_analyses(results: List[Dict]) -> Dict[str, Union[str, List[Dict], Dict]]:
     """Combine multiple chunk analyses into one coherent analysis."""
     combined_text = ""
+    individual_chunks = []
 
     for result in results:
         if not result:
@@ -173,27 +174,15 @@ def combine_analyses(results: List[Dict]) -> str:
             logging.warning(f"No text found in analysis: {analysis}")
             continue
 
-        combined_text += process_analysis_text(analysis_text)
+        individual_chunks.append(result)
+        combined_text += analysis_text.strip() + "\n\n"
 
-    if not combined_text.strip():
-        logging.error("No text content was found in the analysis results.")
-        return "No analysis content could be extracted from the results."
-
-    return combined_text.strip()
-
-def process_analysis_text(analysis_text: str) -> str:
-    """Process and clean individual analysis text."""
-    lines = analysis_text.split("\n")
-    combined_text = ""
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-
-        if any(header in line for header in ["1. Title", "2. Language", "3. Sentiment", "4. Trend", "5. Correlation"]):
-            if line not in combined_text:
-                combined_text += "\n" + line + "\n"
-        else:
-            combined_text += line + "\n"
-
-    return combined_text
+    return {
+        "combined_analysis": combined_text.strip() if combined_text.strip() else None,
+        "individual_chunks": individual_chunks,
+        "metadata": {
+            "total_posts_analyzed": sum(r.get("posts_analyzed", 0) for r in individual_chunks),
+            "analysis_timestamp": datetime.now().isoformat(),
+            "number_of_chunks": len(individual_chunks)
+        }
+    }
