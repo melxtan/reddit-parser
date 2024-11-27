@@ -103,7 +103,7 @@ Problem Type Classification:
 Outline and instructions:
 1.Summary: Output a paragraph of content that includes the problem type and user pain point analysis, and you can add some other relevant analysis content as appropriate.
 2.Content theme direction: Output 3 pieces of content for reference and summarize each in one sentence.
-3.SEO keyword structure and content details analysis: Output 5 keyword structures with variables and correspondingly 10 possible values for each variable.(e.g.,where to buy [product] in [location], [product]: laptop,smartphone,bicycle,television,refrigerator,washing machine,sofa,dining table,microwave,air conditioner,[location]: New York,Los Angeles,Chicago,Houston,Miami,San Francisco,Seattle,Boston,Atlanta,Dallas."[]"means the variables inside, users can choose to replace them according to the specific values provided.) There is no limit to the number of variables contained in each keyword structure. All keywords outputted must be suitable for appearing in this blog article and preferably have variables. Based on the contents of the above five SEO keyword structures, output the corresponding content details.
+3.SEO keyword structure and content details analysis: Output 5 keyword structures with variables and correspondingly 10 possible values for each variable. (e.g.,where to buy {product} in {location}, {product}: laptop,smartphone,bicycle,television,refrigerator,washing machine,sofa,dining table,microwave,air conditioner,{location}: New York,Los Angeles,Chicago,Houston,Miami,San Francisco,Seattle,Boston,Atlanta,Dallas) There is no limit to the number of variables contained in each keyword structure. All keywords outputted must be suitable for appearing in this blog article and preferably have variables. Based on the contents of the above five SEO keyword structures, output the corresponding content details.
 4.Main brands and products mentioned, frequency and attitudes: Identify the brands and times mentioned by users in their comments, and determine the user's attitude "positive/negative/neutral" each time the brand is mentioned. Pay attention to identifying implicit emotions and whether there are special contexts. Calculate the proportion of positive/negative/neutral attitudes based on the number of mentions and the attitude each time the brand is mentioned, and compare the calculation results. The attitude with the highest proportion is assumed to be the user's attitude towards this product of the brand. Please output the brand name, number of mentions, and user attitude in order.(e.g.,Nike Air Force 1: 5 times, positive)
 </detailed_analysis_protocol>
 <output_example>
@@ -114,12 +114,12 @@ a. Recommendation of lightweight sports shoes with good value for money
 b. Guide to low-priced high-performance running shoes
 c. Evaluation of sports shoes with good value for money
 3. SEO keyword structure and content analysis
-a. where to buy [brand] sneakers in [size] for [gender], [price range]
+a. where to buy {brand} sneakers in {size} for {gender}, {price range}
 Variables:
-- [brand]: Nike, Adidas, Converse, New Balance, Jordan, Vans, Puma, Reebok, Skechers, Under Armour
-- [size]: US 7, US 8, US 9, US 10, US 11, US 12, US 13, US 14, US 15, EU 41
-- [gender]: men, women, kids, unisex, boys, girls, youth, senior, plus size, athletic
-- [price range]: under $50, $50-$100, $100-$200, $200-$300, $300-$500, premium, budget, mid-range, luxury, clearance
+- {brand}: Nike, Adidas, Converse, New Balance, Jordan, Vans, Puma, Reebok, Skechers, Under Armour
+- {size}: US 7, US 8, US 9, US 10, US 11, US 12, US 13, US 14, US 15, EU 41
+- {gender}: men, women, kids, unisex, boys, girls, youth, senior, plus size, athletic
+- {price range}: under $50, $50-$100, $100-$200, $200-$300, $300-$500, premium, budget, mid-range, luxury, clearance
 Content Analysis: Target footwear searches for specific brands, sizes, and genders, with an emphasis on price ranges and personalized options.
 4. Main brands and products mentioned, frequency and attitudes
 a. New Balance 990v5 (5 times, positive)
