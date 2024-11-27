@@ -18,6 +18,15 @@ if "aws_creds" not in st.session_state:
     st.session_state.aws_creds = None
 if "task_containers" not in st.session_state:
     st.session_state.task_containers = {}
+    
+# Define task order
+task_order = [
+    "title_and_post_text_analysis",
+    "language_feature_extraction",
+    "sentiment_color_tracking",
+    "trend_analysis",
+    "correlation_analysis"
+]
 
 password_input = st.text_input("Enter password to access the app:", type="password", key="password_input")
 
@@ -176,34 +185,38 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                     os.environ["AWS_ACCESS_KEY_ID"] = st.session_state.aws_creds["access_key"]
                     os.environ["AWS_SECRET_ACCESS_KEY"] = st.session_state.aws_creds["secret_key"]
                     
-                    # Create placeholder containers for each task
-                    st.session_state.task_containers = {
-                        "title_and_post_text_analysis": st.empty(),
-                        "language_feature_extraction": st.empty(),
-                        "sentiment_color_tracking": st.empty(),
-                        "trend_analysis": st.empty(),
-                        "correlation_analysis": st.empty()
-                    }
+                    # Initialize containers for each task's section
+                    for task_name in task_order:
+                        st.subheader(task_name.replace('_', ' ').title())
+                        status_container = st.empty()
+                        result_container = st.empty()
+                        st.write("---")
+                        st.session_state.task_containers[task_name] = {
+                            'status': status_container,
+                            'result': result_container
+                        }
                     
                     # Reset analysis results
                     st.session_state.analysis_results = {}
                     
                     # Initialize status messages
-                    for name, container in st.session_state.task_containers.items():
-                        container.info(f"Waiting to start {name.replace('_', ' ').title()}...")
+                    for task_name in task_order:
+                        st.session_state.task_containers[task_name]['status'].info(
+                            f"Waiting to start {task_name.replace('_', ' ').title()}..."
+                        )
                     
                     def update_task_status(task_name: str, result: dict):
-                        container = st.session_state.task_containers[task_name]
+                        containers = st.session_state.task_containers[task_name]
                         if 'error' in result:
-                            container.error(f"Error in {task_name.replace('_', ' ').title()}: {result['error']}")
+                            containers['status'].error(
+                                f"Error in {task_name.replace('_', ' ').title()}: {result['error']}"
+                            )
                         else:
-                            container.success(f"{task_name.replace('_', ' ').title()} completed!")
+                            containers['status'].success(
+                                f"{task_name.replace('_', ' ').title()} completed!"
+                            )
+                            containers['result'].write(result['analysis'])
                             st.session_state.analysis_results[task_name] = result
-                            
-                            # Create a new subheader and content for this task
-                            st.subheader(task_name.replace('_', ' ').title())
-                            st.write(result['analysis'])
-                            st.write("---")
                     
                     # Start analysis with callback
                     analyze_reddit_data(
@@ -219,10 +232,10 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                     logging.exception("Analysis error:")
             
             # Display existing results if any
-            if st.session_state.analysis_results:
-                # Only show results if not currently analyzing
-                if not st.session_state.task_containers:
-                    for task_name, result in st.session_state.analysis_results.items():
+            if st.session_state.analysis_results and not st.session_state.task_containers:
+                for task_name in task_order:
+                    if task_name in st.session_state.analysis_results:
+                        result = st.session_state.analysis_results[task_name]
                         if 'error' not in result:
                             st.subheader(task_name.replace('_', ' ').title())
                             st.write(result['analysis'])
