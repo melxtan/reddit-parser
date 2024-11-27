@@ -5,6 +5,7 @@ from typing import List, Dict, Callable, Tuple
 import boto3
 from botocore.config import Config
 import re
+from collections import defaultdict
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -27,6 +28,9 @@ class RedditAnalyzer:
         self.rate_limit_per_second = rate_limit_per_second
         self._last_request_time = 0
         self.template = self._load_prompt_template()
+        
+        # Store results from previous tasks
+        self.analysis_results = defaultdict(dict)
         
         self.tasks = [
             (1, "title_and_post_text_analysis"),
@@ -51,11 +55,7 @@ class RedditAnalyzer:
         return match.group(1).strip() if match else ""
 
     def _extract_task_components(self, task_name: str) -> Dict[str, str]:
-        """
-        Extract all components of a task section
-        Returns dict with task, requirements, role, context, protocol, and output format
-        """
-        # Extract the entire task section
+        """Extract all components of a task section"""
         task_pattern = f"<{task_name}>(.*?)</{task_name}>"
         task_match = re.search(task_pattern, self.template, re.DOTALL)
         
@@ -64,7 +64,6 @@ class RedditAnalyzer:
             
         task_content = task_match.group(1).strip()
         
-        # Extract individual components
         components = {
             'task': self._extract_tag_content(task_content, 'task'),
             'requirements': self._extract_tag_content(task_content, 'requirements'),
@@ -98,6 +97,17 @@ class RedditAnalyzer:
             try:
                 self._rate_limit()
                 
+                # For correlation analysis, include results from previous tasks
+                previous_results = ""
+                if task_name == "correlation_analysis":
+                    previous_results = "\nPrevious analysis results:\n"
+                    for prev_task in ["title_and_post_text_analysis", "language_feature_extraction", 
+                                    "sentiment_color_tracking", "trend_analysis"]:
+                        if prev_task in self.analysis_results:
+                            previous_results += f"\n{prev_task} results:\n"
+                            previous_results += self.analysis_results[prev_task]['analysis']
+                            previous_results += "\n"
+                
                 prompt = (
                     f"{components['role']}\n\n"
                     f"Task: {components['task']}\n"
@@ -107,6 +117,7 @@ class RedditAnalyzer:
                     f"You must format your response EXACTLY like this example:\n{components['output_format']}\n\n"
                     f"Do not deviate from this format or add any additional explanations.\n\n"
                     f"Data to analyze:\n{json.dumps(posts, indent=2)}"
+                    f"{previous_results}"  # Include previous results for correlation analysis
                 )
                 
                 body = {
@@ -133,12 +144,17 @@ class RedditAnalyzer:
                 
                 response_body = json.loads(response['body'].read().decode())
                 
-                return {
+                result = {
                     'task_name': task_name,
                     'task_number': task_number,
                     'analysis': response_body['content'] if isinstance(response_body, dict) and 'content' in response_body else response_body['messages'][0]['content'],
                     'posts_analyzed': len(posts)
                 }
+                
+                # Store the result for potential use in correlation analysis
+                self.analysis_results[task_name] = result
+                
+                return result
                 
             except Exception as e:
                 if attempt == max_retries - 1:
@@ -155,6 +171,9 @@ class RedditAnalyzer:
         top_posts = sorted_posts[:num_top_posts]
         
         logger.info(f"Starting analysis of {len(top_posts)} top posts")
+        
+        # Clear previous results at the start of a new analysis
+        self.analysis_results.clear()
         
         for task_number, task_name in self.tasks:
             try:
