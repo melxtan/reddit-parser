@@ -1,22 +1,22 @@
 import json
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Dict
 import boto3
 from botocore.config import Config
 import tenacity
-import streamlit as st
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
 class RedditAnalyzer:
-    def __init__(self, region_name="us-west-2", rate_limit_per_second=2, rate_limit_sleep_time=10, max_retries=5, retry_backoff_factor=2):
+    def __init__(self, region_name="us-west-2", max_workers=5, rate_limit_per_second=2, rate_limit_sleep_time=10):
         config = Config(
             region_name=region_name,
             retries=dict(
-                max_attempts=max_retries,
-                mode="standard"
+                max_attempts=5,
+                mode="adaptive"
             )
         )
         
@@ -25,10 +25,9 @@ class RedditAnalyzer:
             config=config
         )
         
+        self.max_workers = max_workers
         self.rate_limit_per_second = rate_limit_per_second
         self.rate_limit_sleep_time = rate_limit_sleep_time
-        self.max_retries = max_retries
-        self.retry_backoff_factor = retry_backoff_factor
         self._last_request_time = 0
         
         # Load template during initialization
@@ -51,11 +50,12 @@ class RedditAnalyzer:
         self._last_request_time = time.time()
 
     @tenacity.retry(
-        stop=tenacity.stop_after_attempt(self.max_retries),
-        wait=tenacity.wait_exponential(multiplier=self.retry_backoff_factor, min=4, max=60),
+        stop=tenacity.stop_after_attempt(5),
+        wait=tenacity.wait_exponential(multiplier=1, min=4, max=60),
         retry=tenacity.retry_if_exception_type(Exception),
         before_sleep=lambda retry_state: logger.info(f"Retrying after {retry_state.next_action.sleep} seconds...")
     )
+    
     def _analyze_task(self, posts: List[Dict], task_number: int) -> Dict:
         """Analyze a set of Reddit posts for a specific task"""
         self._rate_limit()
@@ -99,8 +99,8 @@ class RedditAnalyzer:
             logger.error(f"Error in _analyze_task: {str(e)}")
             logger.error(f"Error type: {type(e).__name__}")
             raise
-
-    def analyze_posts(self, posts: List[Dict], num_top_posts: int = 20) -> List[Dict]:
+            
+    def analyze_posts(self, posts: List[Dict], num_top_posts: int = 10) -> List[Dict]:
         """Analyze the top N Reddit posts based on score, highest to lowest"""
         # Sort the posts by score, highest to lowest
         posts = sorted(posts, key=lambda x: x['score'], reverse=True)
@@ -110,40 +110,34 @@ class RedditAnalyzer:
         
         logger.info(f"Starting analysis of {len(top_posts)} top posts")
         
-        for task_number in range(1, 6):
-            if task_number == 1:
-                st.info("Starting Title and Post Text Analysis...")
-            elif task_number == 2:
-                st.info("Starting Language Feature Extraction...")
-            elif task_number == 3:
-                st.info("Starting Sentiment Color Tracking...")
-            elif task_number == 4:
-                st.info("Starting Trend Analysis...")
-            elif task_number == 5:
-                st.info("Starting Correlation Analysis...")
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            future_to_task = {
+                executor.submit(self._analyze_task, top_posts, task_number): task_number
+                for task_number in range(1, 6)
+            }
             
-            try:
-                analysis = self._analyze_task(top_posts, task_number)
-                results.append(analysis)
-                logger.info(f"Successfully analyzed task {task_number} with {analysis.get('posts_analyzed', 0)} posts")
-            except Exception as e:
-                logger.error(f"Failed to analyze task {task_number}: {str(e)}")
-                
+            for future in as_completed(future_to_task):
+                task_number = future_to_task[future]
+                try:
+                    analysis = future.result()
+                    results.append(analysis)
+                    logger.info(f"Successfully analyzed task {task_number} with {analysis.get('posts_analyzed', 0)} posts")
+                except Exception as e:
+                    logger.error(f"Failed to analyze task {task_number}: {str(e)}")
+                    
         return results
 
 def analyze_reddit_data(post_data: List[Dict], 
                        region_name: str = "us-west-2",
+                       max_workers: int = 5,
                        rate_limit_per_second: int = 2,
                        rate_limit_sleep_time: int = 10,
-                       max_retries: int = 5,
-                       retry_backoff_factor: int = 2,
-                       num_top_posts: int = 20) -> List[Dict]:
+                       num_top_posts: int = 20) -> Dict:
     analyzer = RedditAnalyzer(
         region_name=region_name,
+        max_workers=max_workers,
         rate_limit_per_second=rate_limit_per_second,
-        rate_limit_sleep_time=rate_limit_sleep_time,
-        max_retries=max_retries,
-        retry_backoff_factor=retry_backoff_factor
+        rate_limit_sleep_time=rate_limit_sleep_time
     )
     
     return analyzer.analyze_posts(post_data, num_top_posts)
