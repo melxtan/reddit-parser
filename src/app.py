@@ -233,6 +233,9 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
             else:
                 st.warning("Please set your AWS credentials above to enable post analysis")
 
+if __name__ == "__main__":
+    main()
+
     if __name__ == "__main__":
         main()
 else:
