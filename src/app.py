@@ -197,12 +197,21 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
             if st.session_state.analysis_results:
                 st.subheader("Reddit Post Analysis")
                 for task_result in st.session_state.analysis_results:
-                    st.subheader(f"Task {task_result['task_number']} Analysis")
+                    if task_result['task_number'] == 1:
+                        st.subheader("Title and Post Text Analysis")
+                    elif task_result['task_number'] == 2:
+                        st.subheader("Language Feature Extraction")
+                    elif task_result['task_number'] == 3:
+                        st.subheader("Sentiment Color Tracking")
+                    elif task_result['task_number'] == 4:
+                        st.subheader("Trend Analysis")
+                    elif task_result['task_number'] == 5:
+                        st.subheader("Correlation Analysis")
                     st.write(task_result['analysis'])
                     st.write("---")
 
                 st.subheader("Download Analysis Results")
-                
+
                 analysis_json = json.dumps(st.session_state.analysis_results, indent=2)
                 st.download_button(
                     label="Download Analysis (JSON)",
