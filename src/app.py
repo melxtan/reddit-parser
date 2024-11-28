@@ -195,9 +195,10 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
             
             if st.button("Analyze Reddit Posts"):
                 try:
-                    aws_access_key = st.session_state.aws_creds["access_key"]
-                    aws_secret_key = st.session_state.aws_creds["secret_key"]
-                    aws_region = st.session_state.aws_creds["region"]
+                    # Set AWS credentials as environment variables
+                    os.environ["AWS_ACCESS_KEY_ID"] = st.session_state.aws_creds["access_key"]
+                    os.environ["AWS_SECRET_ACCESS_KEY"] = st.session_state.aws_creds["secret_key"]
+                    os.environ["AWS_DEFAULT_REGION"] = st.session_state.aws_creds["region"]
                     
                     # Initialize containers for each task's section
                     for task_name in task_order:
@@ -247,16 +248,14 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                                     key="analysis_json_new"
                                 )
                     
-                    # Start analysis with callback and search query
+                    # Call analyze_reddit_data without AWS credentials
                     analyze_reddit_data(
                         post_data=st.session_state.post_data,
                         callback=update_task_status,
-                        region_name=aws_region,
+                        region_name=st.session_state.aws_creds["region"],
                         rate_limit_per_second=0.5,
                         num_top_posts=20,
-                        search_query=st.session_state.current_query,
-                        aws_access_key=aws_access_key,
-                        aws_secret_key=aws_secret_key
+                        search_query=st.session_state.current_query
                     )
                     
                 except Exception as e:
