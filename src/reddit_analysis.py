@@ -27,12 +27,6 @@ class TaskDefinition:
 
 class PromptHandler:
     def __init__(self, prompts_dir: str):
-        """
-        Initialize PromptHandler with a directory containing XML prompt files.
-        
-        Args:
-            prompts_dir: Directory containing the XML prompt files
-        """
         self.prompts_dir = prompts_dir
         self.tasks = self._load_tasks()
 
@@ -44,7 +38,7 @@ class PromptHandler:
             tree = ET.parse(file_path)
             root = tree.getroot()
             
-            return PromptComponent(
+            component = PromptComponent(
                 task=root.find('task').text.strip(),
                 requirements=root.find('requirements').text.strip(),
                 role=root.find('role').text.strip(),
@@ -52,35 +46,26 @@ class PromptHandler:
                 protocol=root.find('detailed_analysis_protocol').text.strip(),
                 output_format=root.find('output_example').text.strip()
             )
+            return component
+            
         except Exception as e:
             logger.error(f"Error loading prompt file {file_path}: {str(e)}")
             raise
-
-    def _load_tasks(self) -> List[TaskDefinition]:
-        """Load all task definitions from XML files."""
-        tasks = []
-        for task_number, task_name in RedditAnalyzer.TASKS:
-            try:
-                component = self._load_prompt_file(task_name)
-                tasks.append(TaskDefinition(
-                    name=task_name,
-                    number=task_number,
-                    component=component
-                ))
-            except Exception as e:
-                logger.error(f"Failed to load task {task_name}: {str(e)}")
-                raise
-        
-        return tasks
 
     def format_prompt(self, task_def: TaskDefinition, posts: List[Dict], previous_results: Optional[str] = None) -> str:
         """Format the prompt for a specific task."""
         component = task_def.component
         
+        # Get the search query from the first post (assuming all posts have the same search query)
+        search_query = posts[0].get('search_query', '') if posts else ''
+        
+        # Replace {{search_query}} in task text
+        task = component.task.replace('{{search_query}}', search_query)
+        
         if task_def.name == "correlation_analysis":
             prompt = (
                 f"{component.role}\n\n"
-                f"Task: {component.task}\n"
+                f"Task: {task}\n"
                 f"Context: {component.context}\n\n"
                 f"Analysis Protocol:\n{component.protocol}\n\n"
                 f"You must format your response EXACTLY like this example:\n{component.output_format}\n\n"
@@ -90,9 +75,10 @@ class PromptHandler:
         else:
             prompt = (
                 f"{component.role}\n\n"
-                f"Task: {component.task}\n"
+                f"Task: {task}\n"
                 f"Context: {component.context}\n\n"
-                f"Analysis Protocol:\n{component.protocol}\n\n"
+                f"Requirements:\n{component.requirements}\n\n"
+                f"Definitions and Examples:\n{component.protocol}\n\n"
                 f"You must format your response EXACTLY like this example:\n{component.output_format}\n\n"
                 f"Do not deviate from this format or add any additional explanations.\n\n"
                 f"Data to analyze:\n{json.dumps(posts, indent=2)}"
@@ -261,18 +247,13 @@ def analyze_reddit_data(
     callback: Callable[[str, Dict[str, Any]], None],
     region_name: str = "us-west-2",
     rate_limit_per_second: float = 0.2,
-    num_top_posts: int = 10
+    num_top_posts: int = 10,
+    search_query: str = ""  # Add search_query parameter
 ) -> None:
-    """
-    Analyze Reddit post data using Amazon Bedrock.
-    
-    Args:
-        post_data: List of Reddit posts to analyze
-        callback: Function to call with results of each analysis task
-        region_name: AWS region name
-        rate_limit_per_second: Rate limit for API calls
-        num_top_posts: Number of top posts to analyze
-    """
+    # Add search_query to each post
+    for post in post_data:
+        post['search_query'] = search_query
+        
     analyzer = RedditAnalyzer(
         region_name=region_name,
         rate_limit_per_second=rate_limit_per_second
