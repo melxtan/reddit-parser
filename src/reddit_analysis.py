@@ -30,6 +30,12 @@ class RedditAnalyzer:
         self.rate_limit_per_second = rate_limit_per_second
         self._last_request_time = 0
         self.compiler = Compiler()
+
+        def json_helper(this, value):
+            return json.dumps(value, indent=2)
+
+        def concat_helper(this, *args):
+            return ''.join([str(arg) for arg in args])
         
         # Add helpers for templates
         self.helpers = {
