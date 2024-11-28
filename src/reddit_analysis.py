@@ -1,10 +1,10 @@
+import os
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Any, Callable
 import json
 import logging
 import time
-import os
 import boto3
 from botocore.config import Config
 
@@ -26,33 +26,50 @@ class TaskDefinition:
     component: PromptComponent
 
 class PromptHandler:
-    def __init__(self, template_path: str):
-        self.template_tree = ET.parse(template_path)
-        self.template_root = self.template_tree.getroot()
+    def __init__(self, prompts_dir: str):
+        """
+        Initialize PromptHandler with a directory containing XML prompt files.
+        
+        Args:
+            prompts_dir: Directory containing the XML prompt files
+        """
+        self.prompts_dir = prompts_dir
         self.tasks = self._load_tasks()
 
+    def _load_prompt_file(self, task_name: str) -> PromptComponent:
+        """Load and parse a single XML prompt file."""
+        file_path = os.path.join(self.prompts_dir, f"{task_name}.xml")
+        
+        try:
+            tree = ET.parse(file_path)
+            root = tree.getroot()
+            
+            return PromptComponent(
+                task=root.find('task').text.strip(),
+                requirements=root.find('requirements').text.strip(),
+                role=root.find('role').text.strip(),
+                context=root.find('context').text.strip(),
+                protocol=root.find('detailed_analysis_protocol').text.strip(),
+                output_format=root.find('output_example').text.strip()
+            )
+        except Exception as e:
+            logger.error(f"Error loading prompt file {file_path}: {str(e)}")
+            raise
+
     def _load_tasks(self) -> List[TaskDefinition]:
-        """Load all tasks from the XML template."""
+        """Load all task definitions from XML files."""
         tasks = []
         for task_number, task_name in RedditAnalyzer.TASKS:
-            task_elem = self.template_root.find(task_name)
-            if task_elem is None:
-                raise ValueError(f"Task {task_name} not found in template")
-
-            component = PromptComponent(
-                task=task_elem.find('task').text.strip(),
-                requirements=task_elem.find('requirements').text.strip(),
-                role=task_elem.find('role').text.strip(),
-                context=task_elem.find('context').text.strip(),
-                protocol=task_elem.find('detailed_analysis_protocol').text.strip(),
-                output_format=task_elem.find('output_example').text.strip()
-            )
-            
-            tasks.append(TaskDefinition(
-                name=task_name,
-                number=task_number,
-                component=component
-            ))
+            try:
+                component = self._load_prompt_file(task_name)
+                tasks.append(TaskDefinition(
+                    name=task_name,
+                    number=task_number,
+                    component=component
+                ))
+            except Exception as e:
+                logger.error(f"Failed to load task {task_name}: {str(e)}")
+                raise
         
         return tasks
 
@@ -120,9 +137,10 @@ class RedditAnalyzer:
         self._request_timestamps = []
         self._max_requests_per_minute = 40  # AWS quota
         
-        # Initialize prompt handler
+        # Initialize prompt handler with prompts directory
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        self.prompt_handler = PromptHandler(os.path.join(current_dir, "prompts.txt"))
+        prompts_dir = os.path.join(current_dir, "prompts")
+        self.prompt_handler = PromptHandler(prompts_dir)
         
         self._initialized = True
 
