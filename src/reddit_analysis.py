@@ -98,7 +98,7 @@ class RedditAnalyzer:
                 
                 # Extract relevant sections using regex
                 for section in sections:
-                    pattern = f"{section}.*?(?=\n\n|\Z)"
+                    pattern = fr"{section}.*?(?=\n\n|$)"
                     matches = re.findall(pattern, result, re.DOTALL)
                     if matches:
                         # Convert matches[0] to string if it's a list
