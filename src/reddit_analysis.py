@@ -39,8 +39,8 @@ class RedditAnalyzer:
         
         # Add helpers for templates
         self.helpers = {
-            'json': json.dumps,
-            'concat': lambda *args: ''.join([str(arg) for arg in args])
+            'json': json_helper,
+            'concat': concat_helper
         }
         
         # Initialize partials dict
