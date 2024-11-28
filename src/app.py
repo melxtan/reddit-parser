@@ -8,10 +8,8 @@ import streamlit as st
 from scrape_reddit import ScrapeReddit
 from reddit_analysis import analyze_reddit_data
 
-# Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
-# Initialize session state variables
 if "post_data" not in st.session_state:
     st.session_state.post_data = None
 if "analysis_results" not in st.session_state:
@@ -20,9 +18,7 @@ if "aws_creds" not in st.session_state:
     st.session_state.aws_creds = None
 if "task_containers" not in st.session_state:
     st.session_state.task_containers = {}
-if "current_query" not in st.session_state:
-    st.session_state.current_query = ""
-
+    
 # Define task order
 task_order = [
     "title_and_post_text_analysis",
@@ -37,16 +33,7 @@ password_input = st.text_input("Enter password to access the app:", type="passwo
 if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
     st.title("Reddit Post Scraper")
 
-    def on_search_query_change():
-        if "search_query" in st.session_state:
-            search_query = st.session_state.search_query
-            st.session_state.current_query = search_query
-
-    search_query = st.text_input(
-        "Enter a search query:", 
-        key="search_query",
-        on_change=on_search_query_change
-    )
+    search_query = st.text_input("Enter a search query:", key="search_query")
 
     col1, col2 = st.columns(2)
 
@@ -195,10 +182,8 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
             
             if st.button("Analyze Reddit Posts"):
                 try:
-                    # Set AWS credentials as environment variables
                     os.environ["AWS_ACCESS_KEY_ID"] = st.session_state.aws_creds["access_key"]
                     os.environ["AWS_SECRET_ACCESS_KEY"] = st.session_state.aws_creds["secret_key"]
-                    os.environ["AWS_DEFAULT_REGION"] = st.session_state.aws_creds["region"]
                     
                     # Initialize containers for each task's section
                     for task_name in task_order:
@@ -248,14 +233,13 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                                     key="analysis_json_new"
                                 )
                     
-                    # Call analyze_reddit_data without AWS credentials
+                    # Start analysis with callback
                     analyze_reddit_data(
                         post_data=st.session_state.post_data,
                         callback=update_task_status,
                         region_name=st.session_state.aws_creds["region"],
                         rate_limit_per_second=0.5,
-                        num_top_posts=20,
-                        search_query=st.session_state.current_query
+                        num_top_posts=20
                     )
                     
                 except Exception as e:
