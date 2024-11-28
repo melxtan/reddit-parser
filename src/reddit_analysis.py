@@ -27,6 +27,12 @@ class TaskDefinition:
 
 class PromptHandler:
     def __init__(self, prompts_dir: str):
+        """
+        Initialize PromptHandler with a directory containing XML prompt files.
+        
+        Args:
+            prompts_dir: Directory containing the XML prompt files
+        """
         self.prompts_dir = prompts_dir
         self.tasks = self._load_tasks()
 
@@ -51,6 +57,23 @@ class PromptHandler:
         except Exception as e:
             logger.error(f"Error loading prompt file {file_path}: {str(e)}")
             raise
+
+    def _load_tasks(self) -> List[TaskDefinition]:
+        """Load all task definitions from XML files."""
+        tasks = []
+        for task_number, task_name in RedditAnalyzer.TASKS:
+            try:
+                component = self._load_prompt_file(task_name)
+                tasks.append(TaskDefinition(
+                    name=task_name,
+                    number=task_number,
+                    component=component
+                ))
+            except Exception as e:
+                logger.error(f"Failed to load task {task_name}: {str(e)}")
+                raise
+        
+        return tasks
 
     def format_prompt(self, task_def: TaskDefinition, posts: List[Dict], previous_results: Optional[str] = None) -> str:
         """Format the prompt for a specific task."""
