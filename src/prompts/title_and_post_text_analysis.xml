@@ -1,4 +1,4 @@
-<title_and_post_text_analysis>
+<prompt>
 <task>Extract user demand insights from Reddit {{search_query}} comments and analyze the purpose of user posting.</task>
 
 <requirements>Classify the purpose of titles and post_text according to the <definitions_and_examples> below to identify the user's motivation for posting.You only need to output the exact name of the type, without any specific analysis. If the title and post_text in the attachments do not belong to the types mentioned below, please output the new type and explain it briefly. In the following analysis steps, please prioritize comments with high score ranking.</requirements>
@@ -18,9 +18,9 @@ Information verification posts:Posts aimed at cross-checking facts, confirming i
 Personal growth posts:Posts seeking guidance, strategies, or insights for personal growth, self-improvement, and life skill enhancement.(e.g.,"Personal development question")
 Action suggestions posts: Posts where users seek practical advice, strategic approaches, or collective wisdom on handling specific situations or challenges.(e.g.,"What would you do in this situation?")
 Advertorial posts: A strategic content format that blends advertising and editorial content, designed to promote a product/service while mimicking authentic editorial style.
-</definitions_and_examples> 
+<definitions_and_examples> 
 
 <output_example>
 1.Purpose: Recommendation seeking posts
-</output_example>
-</title_and_post_text_analysis>
+<output_example>
+</prompt>
