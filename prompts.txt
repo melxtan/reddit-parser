@@ -1,6 +1,6 @@
 <title_and_post_text_analysis>
 <task>Extract user demand insights from Reddit {search_query} comments and transform them into actionable SEO content strategies.</task>
-<requirements>Understand user needs by analyzing the title, post_text, num_comments, score, subreddit, created_utc, and comments of the posts under {search_query} on Reddit in the attachments. Please follow the strict <detailed_analysis_protocol> to perform the analysis. At the same time, the analysis results are output strictly in accordance with the format and order of output_example.</requirements>
+<requirements>Understand user needs by analyzing the title, post_text, num_comments, score, subreddit, created_utc, and comments of the posts under {search_query} on Reddit in the attachments. In the following analysis steps, please prioritize content with high score ranking. Please follow the strict <detailed_analysis_protocol> to perform the analysis. At the same time, the analysis results are output strictly in accordance with the format and order of output_example.</requirements>
 <role>You are a professional Reddit data analyst specialized in user insight extraction</role>
 <context>Develop AI-powered SEO writing tool for e-commerce by understanding user needs through Reddit comment analysis</context>
 <detailed_analysis_protocol>Objective: Classify the purpose of titles and post_text according to the definitions and examples below to accurately identify the user's motivation for posting.You just need to output the name of the type. If the title and post_text in the attachments do not belong to the types mentioned below, please output the new type and explain it briefly.
@@ -23,7 +23,7 @@ Definitions and examples of purposes:
 <language_feature_extraction>
 <task>Extract user demand insights from Reddit {search_query} comments and transform them into actionable SEO content strategies.</task>
 
-<requirements>Understand user needs by analyzing the title, post_text, num_comments, score, subreddit, created_utc, and comments of the posts under {search_query} on Reddit in the attachments. Please follow the strict <detailed_analysis_protocol> to perform the analysis. At the same time, the analysis results are output strictly in accordance with the format and order of output_example.</requirements>
+<requirements>Understand user needs by analyzing the title, post_text, num_comments, score, subreddit, created_utc, and comments of the posts under {search_query} on Reddit in the attachments. In the following analysis steps, please prioritize content with high score ranking. Please follow the strict <detailed_analysis_protocol> to perform the analysis. At the same time, the analysis results are output strictly in accordance with the format and order of output_example.</requirements>
 
 <role>You are a professional Reddit data analyst specialized in user insight extraction</role>
 
@@ -42,7 +42,7 @@ Definitions and examples of purposes:
 <sentiment_color_tracking>
 <task>Extract user demand insights from Reddit {search_query} comments and transform them into actionable SEO content strategies.</task>
 
-<requirements>Understand user needs by analyzing the title, post_text, num_comments, score, subreddit, created_utc, and comments of the posts under {search_query} on Reddit in the attachments. Please follow the strict <detailed_analysis_protocol> to perform the analysis. At the same time, the analysis results are output strictly in accordance with the format and order of output_example.</requirements>
+<requirements>Understand user needs by analyzing the title, post_text, num_comments, score, subreddit, created_utc, and comments of the posts under {search_query} on Reddit in the attachments. In the following analysis steps, please prioritize content with high score ranking. Please follow the strict <detailed_analysis_protocol> to perform the analysis. At the same time, the analysis results are output strictly in accordance with the format and order of output_example.</requirements>
 
 <role>You are a professional Reddit data analyst specialized in user insight extraction</role>
 
@@ -59,7 +59,7 @@ Definitions and examples of purposes:
 <trend_analysis>
 <task>Extract user demand insights from Reddit {search_query} comments and transform them into actionable SEO content strategies.</task>
 
-<requirements>Understand user needs by analyzing the title, post_text, num_comments, score, subreddit, created_utc, and comments of the posts under {search_query} on Reddit in the attachments. Please follow the strict <detailed_analysis_protocol> to perform the analysis. At the same time, the analysis results are output strictly in accordance with the format and order of output_example.</requirements>
+<requirements>Understand user needs by analyzing the title, post_text, num_comments, score, subreddit, created_utc, and comments of the posts under {search_query} on Reddit in the attachments. In the following analysis steps, please prioritize content with high score ranking. Please follow the strict <detailed_analysis_protocol> to perform the analysis. At the same time, the analysis results are output strictly in accordance with the format and order of output_example.</requirements>
 
 <role>You are a professional Reddit data analyst specialized in user insight extraction</role>
 
@@ -89,7 +89,7 @@ b. Possible topic evolution
 <correlation_analysis>
 <task>Extract user demand insights from Reddit {search_query} comments and transform them into actionable SEO content strategies.</task>
 
-<requirements>Understand user needs by analyzing the title, post_text, num_comments, score, subreddit, created_utc, and comments of the posts under {search_query} on Reddit in the attachments. Please follow the strict <detailed_analysis_protocol> to perform the analysis. At the same time, the analysis results are output strictly in accordance with the format and order of output_example.</requirements>
+<requirements>Understand user needs by analyzing the title, post_text, num_comments, score, subreddit, created_utc, and comments of the posts under {search_query} on Reddit in the attachments. In the following analysis steps, please prioritize content with high score ranking. Please follow the strict <detailed_analysis_protocol> to perform the analysis. At the same time, the analysis results are output strictly in accordance with the format and order of output_example.</requirements>
 
 <role>You are a professional Reddit data analyst specialized in user insight extraction</role>
 
