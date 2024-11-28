@@ -240,7 +240,7 @@ class RedditAnalyzer:
                 logger.warning(f"Attempt {attempt + 1} failed for task {task_name}, retrying in {delay} seconds...")
                 time.sleep(delay)
             
-    def analyze_posts(self, posts: List[Dict], callback: Callable[[str, Dict], None], num_top_posts: int = 20):
+    def analyze_posts(self, posts: List[Dict], callback: Callable[[str, Dict], None], num_top_posts: int = 10):
         """Analyze Reddit posts sequentially and call the callback with results as they complete"""
         sorted_posts = sorted(posts, key=lambda x: x['score'], reverse=True)
         top_posts = sorted_posts[:num_top_posts]
