@@ -31,12 +31,14 @@ class RedditAnalyzer:
         self._last_request_time = 0
         self.compiler = Compiler()
         
-        # Add helpers for templates, including concat
+        # Add helpers for templates
         self.helpers = {
             'json': json.dumps,
             'concat': lambda *args: ''.join([str(arg) for arg in args])
         }
         
+        # Initialize partials dict
+        self.partials = {}
         self.templates = self._load_templates()
         self.analysis_results = defaultdict(dict)
         self.search_query = search_query
@@ -54,9 +56,10 @@ class RedditAnalyzer:
         """Load and compile all Handlebars templates with caching"""
         templates = {}
         try:
+            # First load the base template as a partial
             with open('templates/base.hbs', 'r', encoding='utf-8') as file:
-                source = file.read()
-                templates['base'] = self.compiler.compile(source)
+                base_source = file.read()
+                self.partials['base'] = self.compiler.compile(base_source)
             
             # Load individual task templates
             task_files = [
@@ -76,6 +79,15 @@ class RedditAnalyzer:
             
         except Exception as e:
             logger.error(f"Error loading templates: {str(e)}")
+            raise
+
+    def _get_task_prompt(self, task_name: str, context: Dict) -> str:
+        """Generate prompt using Handlebars template"""
+        try:
+            template = self.templates[task_name]
+            return template(context, helpers=self.helpers, partials=self.partials)
+        except Exception as e:
+            logger.error(f"Error generating prompt for {task_name}: {str(e)}")
             raise
 
     def _rate_limit(self):
@@ -112,15 +124,6 @@ class RedditAnalyzer:
                         formatted_results += f"- {section_content.strip()}\n"
         
         return formatted_results
-
-    def _get_task_prompt(self, task_name: str, context: Dict) -> str:
-        """Generate prompt using Handlebars template"""
-        try:
-            template = self.templates[task_name]
-            return template(context, helpers=self.helpers)
-        except Exception as e:
-            logger.error(f"Error generating prompt for {task_name}: {str(e)}")
-            raise
 
     def _analyze_task(self, posts: List[Dict], task_name: str, task_number: int) -> Dict:
         max_retries = 8
