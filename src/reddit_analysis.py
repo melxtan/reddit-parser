@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 import json
 import logging
 import time
@@ -244,6 +244,16 @@ def analyze_reddit_data(
     rate_limit_per_second: float = 0.2,
     num_top_posts: int = 10
 ) -> None:
+    """
+    Analyze Reddit post data using Amazon Bedrock.
+    
+    Args:
+        post_data: List of Reddit posts to analyze
+        callback: Function to call with results of each analysis task
+        region_name: AWS region name
+        rate_limit_per_second: Rate limit for API calls
+        num_top_posts: Number of top posts to analyze
+    """
     analyzer = RedditAnalyzer(
         region_name=region_name,
         rate_limit_per_second=rate_limit_per_second
