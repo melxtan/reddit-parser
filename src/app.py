@@ -229,6 +229,8 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                                     mime="application/json",
                                     key="analysis_json_final"
                                 )
+
+                    search_query = st.session_state.get('search_query', '')
                     
                     # Start analysis with callback
                     analyze_reddit_data(
@@ -236,7 +238,8 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                         callback=update_task_status,
                         region_name=st.session_state.aws_creds["region"],
                         rate_limit_per_second=0.5,
-                        num_top_posts=20
+                        num_top_posts=20,
+                        search_query=search_query
                     )
                     
                 except Exception as e:
