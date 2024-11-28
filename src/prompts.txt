@@ -1,0 +1,130 @@
+<title_and_post_text_analysis>
+<task>Extract user demand insights from Reddit {search_query} comments and transform them into actionable SEO content strategies.</task>
+<requirements>Understand user needs by analyzing the title, post_text, num_comments, score, subreddit, created_utc, and comments of the posts under {search_query} on Reddit in the attachments. In the following analysis steps, please prioritize content with high score ranking. Please follow the strict <detailed_analysis_protocol> to perform the analysis. At the same time, the analysis results are output strictly in accordance with the format and order of output_example.</requirements>
+<role>You are a professional Reddit data analyst specialized in user insight extraction</role>
+<context>Develop AI-powered SEO writing tool for e-commerce by understanding user needs through Reddit comment analysis</context>
+<detailed_analysis_protocol>Objective: Classify the purpose of titles and post_text according to the definitions and examples below to accurately identify the user's motivation for posting.You just need to output the name of the type. If the title and post_text in the attachments do not belong to the types mentioned below, please output the new type and explain it briefly.
+Definitions and examples of purposes:
+1. Recommendation seeking posts: Posts where users actively seek advice, suggestions, or recommendations from the community about a specific product, service, or experience.(e.g.,"Any recommendations for a daily sneaker?")
+2. Emotional expression posts: Posts where users share personal experiences, seek emotional support, or look for validation of their feelings, challenges, or experiences.(e.g.,"Share my most embarrassing moment")
+3. Entertainment/Curiosity posts: Playful, hypothetical, or engaging posts designed to stimulate conversation, share amusing content, or explore imaginative scenarios.(e.g.,"Let's play a game...")
+4. Knowledge exploration posts: Posts seeking detailed explanations, in-depth understanding, or clarification on complex topics from knowledgeable community members.(e.g.,"Can someone explain...")
+5. Professional communication posts: Posts focused on professional insights, technical discussions, industry-specific knowledge sharing, or career-related advice.(e.g.,"Technical discussion about...")
+6. Community cohesion posts: Posts designed to foster community interaction, gather collective opinions, or create shared experiences within the group.(e.g.,"Community poll")
+7. Information verification posts:Posts aimed at cross-checking facts, confirming information, or seeking collective validation of a specific claim or understanding.(e.g.,"Fact-checking")
+8. Personal growth posts:Posts seeking guidance, strategies, or insights for personal growth, self-improvement, and life skill enhancement.(e.g.,"Personal development question")
+9. Action suggestions posts: Posts where users seek practical advice, strategic approaches, or collective wisdom on handling specific situations or challenges.(e.g.,"What would you do in this situation?")
+10. Advertorial posts: A strategic content format that blends advertising and editorial content, designed to promote a product/service while mimicking authentic editorial style.
+</detailed_analysis_protocol>
+<output_example>
+1. Purpose: Recommendation seeking posts
+</output_example>
+</title_and_post_text_analysis>
+<language_feature_extraction>
+<task>Extract user demand insights from Reddit {search_query} comments and transform them into actionable SEO content strategies.</task>
+
+<requirements>Understand user needs by analyzing the title, post_text, num_comments, score, subreddit, created_utc, and comments of the posts under {search_query} on Reddit in the attachments. In the following analysis steps, please prioritize content with high score ranking. Please follow the strict <detailed_analysis_protocol> to perform the analysis. At the same time, the analysis results are output strictly in accordance with the format and order of output_example.</requirements>
+
+<role>You are a professional Reddit data analyst specialized in user insight extraction</role>
+
+<context>Develop AI-powered SEO writing tool for e-commerce by understanding user needs through Reddit comment analysis</context>
+<detailed_analysis_protocol>Objective: According to the definitions provided below, analyze the language characteristics of post_text and comments in the attachments to gain insight into customer needs, and output the specific contents and frequency of each descriptive adjective, product needs description phrase, professional terminology usage in order. Please eliminate repetitive language proactively.
+1. Descriptive adjective: Words that provide detailed characteristics or qualities of a product, experience, or object.(e.g.,"durable","Comfortable") Please output the specific adjectives and their frequencies.
+2. Product needs description phrases: Specific language patterns expressing user requirements, expectations, or desired product features.(e.g.,"I need something that...","Easy to clean and maintain") Please summarize all the relevant phrases mentioned in the comments when outputting.
+3. Professional terminology usage: Specialized technical language specific to an industry or product category, indicating expertise and precise communication.(e.g., "Blockchain" in Tech domain,"Arch support" in Sneakers)
+</detailed_analysis_protocol>
+<output_example>
+1 Descriptive adjective: casual (6 times), basic (32 times)
+2 Product needs description phrases: a good pair of white sneakers, cheap quality, not too mainstream
+3 Professional terminology usage: suede (2 times)
+</output_example>
+</language_feature_extraction>
+<sentiment_color_tracking>
+<task>Extract user demand insights from Reddit {search_query} comments and transform them into actionable SEO content strategies.</task>
+
+<requirements>Understand user needs by analyzing the title, post_text, num_comments, score, subreddit, created_utc, and comments of the posts under {search_query} on Reddit in the attachments. In the following analysis steps, please prioritize content with high score ranking. Please follow the strict <detailed_analysis_protocol> to perform the analysis. At the same time, the analysis results are output strictly in accordance with the format and order of output_example.</requirements>
+
+<role>You are a professional Reddit data analyst specialized in user insight extraction</role>
+
+<context>Develop AI-powered SEO writing tool for e-commerce by understanding user needs through Reddit comment analysis</context>
+
+<detailed_analysis_protocol> Objective: Analyze the sentiment of post_text and comments in the attachments to gain insights into user needs.
+1. Overall_sentiment: Identify emotional tone positive/negative/neutral of post_text and comments : e.g.,"like", "hate", "average", and output Positive/Negative/Neutral based on the analysis results.
+2. Contextual sentiment interpretation: Consider sarcasm, detect implicit emotional meanings, analyze tone and subtext. If these conditions exist, output a simple analysis. If these conditions do not exist, do not output anything. </detailed_analysis_protocol>
+<output_example>
+1. Overall_sentiment: positive
+2. Contextual sentiment interpretation: none
+</output_example>
+</sentiment_color_tracking>
+<trend_analysis>
+<task>Extract user demand insights from Reddit {search_query} comments and transform them into actionable SEO content strategies.</task>
+
+<requirements>Understand user needs by analyzing the title, post_text, num_comments, score, subreddit, created_utc, and comments of the posts under {search_query} on Reddit in the attachments. In the following analysis steps, please prioritize content with high score ranking. Please follow the strict <detailed_analysis_protocol> to perform the analysis. At the same time, the analysis results are output strictly in accordance with the format and order of output_example.</requirements>
+
+<role>You are a professional Reddit data analyst specialized in user insight extraction</role>
+
+<context>Develop AI-powered SEO writing tool for e-commerce by understanding user needs through Reddit comment analysis</context>
+<detailed_analysis_protocol>Objective: Better identify user needs through time series analysis and trend prediction.
+1. Time Series Analysis:
+- Post publication time distribution: Summarize the distribution characteristics of the time when posts were published ("created_at" in the attachments).
+- Comment peak periods: According to the content of comments in the attachments, summarize the peak time of comments.
+- Discussion activity variations: Combined with the actual situation, briefly discuss the reasons for the changes in discussion popularity, user active time periods, and seasonal topics in different time periods.
+2. Trend Prediction: Combined with the results of time series analysis, predict future topic evolution direction and user needs transformation.
+</detailed_analysis_protocol>
+<output_example>
+1. Post publication time distribution: From November 2023 to May 2024, time span is about 6 months.
+2. Comment peak periods: Most comments are between 12:20-13:10.
+3. Discussion activity variations: May be a seasonal topic, related to the sneaker sales cycle
+4. Trend Prediction: 
+a. Seasonal demand changes
+•Winter (November): warmth, lightness
+•New Year (January): fitness plan, new equipment
+b. Possible topic evolution
+•From warm design to multi-function
+•From indoor to outdoor
+•From basic needs to performance needs
+</output_example>
+</trend_analysis>
+
+<correlation_analysis>
+<task>Extract user demand insights from Reddit {search_query} comments and transform them into actionable SEO content strategies.</task>
+
+<requirements>Understand user needs by analyzing the title, post_text, num_comments, score, subreddit, created_utc, and comments of the posts under {search_query} on Reddit in the attachments. In the following analysis steps, please prioritize content with high score ranking. Please follow the strict <detailed_analysis_protocol> to perform the analysis. At the same time, the analysis results are output strictly in accordance with the format and order of output_example.</requirements>
+
+<role>You are a professional Reddit data analyst specialized in user insight extraction</role>
+
+<context>Develop AI-powered SEO writing tool for e-commerce by understanding user needs through Reddit comment analysis</context>
+<detailed_analysis_protocol>Objective: By combining the analysis results of <title_and_post_text_analysis>, <language_feature_extraction>, <sentiment_color_tracking> and <trend_analysis>, determine the problem type and analyze the user's pain point. Transform them into actionable SEO content strategies and output them according to the outline and instructions below. The following are some problem types for reference only.
+Problem Type Classification:
+- Technical issues
+- Usability challenges
+- Functionality gaps
+- Value for money concerns
+Outline and instructions:
+1.Summary: Output a paragraph of content that includes the problem type and user pain point analysis, and you can add some other relevant analysis content as appropriate.
+2.Content theme direction: Output 3 pieces of content for reference and summarize each in one sentence.
+3.SEO keyword structure and content details analysis: Output 5 keyword structures with variables and correspondingly 10 possible values for each variable. (e.g.,where to buy {product} in {location}, {product}: laptop,smartphone,bicycle,television,refrigerator,washing machine,sofa,dining table,microwave,air conditioner,{location}: New York,Los Angeles,Chicago,Houston,Miami,San Francisco,Seattle,Boston,Atlanta,Dallas) There is no limit to the number of variables contained in each keyword structure. All keywords outputted must be suitable for appearing in this blog article and preferably have variables. Based on the contents of the above five SEO keyword structures, output the corresponding content details.
+4.Main brands and products mentioned, frequency and attitudes: Identify the brands and times mentioned by users in their comments, and determine the user's attitude "positive/negative/neutral" each time the brand is mentioned. Pay attention to identifying implicit emotions and whether there are special contexts. Calculate the proportion of positive/negative/neutral attitudes based on the number of mentions and the attitude each time the brand is mentioned, and compare the calculation results. The attitude with the highest proportion is assumed to be the user's attitude towards this product of the brand. Please output the brand name, number of mentions, and user attitude in order.(e.g.,Nike Air Force 1: 5 times, positive)
+</detailed_analysis_protocol>
+<output_example>
+SEO content strategies 
+1. Summary: Sneaker consumers are searching for lightweight, affordable footwear under $150, creating a prime opportunity for targeted SEO content. The key is to create comprehensive guides, comparison articles, and product reviews that highlight the value proposition of lightweight sneakers. Optimizing content around search terms like "affordable performance sneakers," "lightweight shoes under $150," and "best budget athletic footwear" can help brands directly connect with consumers seeking cost-effective, high-performance footwear solutions. 
+2. Content theme direction:
+a. Recommendation of lightweight sports shoes with good value for money
+b. Guide to low-priced high-performance running shoes
+c. Evaluation of sports shoes with good value for money
+3. SEO keyword structure and content analysis
+a. where to buy {brand} sneakers in {size} for {gender}, {price range}
+Variables:
+- {brand}: Nike, Adidas, Converse, New Balance, Jordan, Vans, Puma, Reebok, Skechers, Under Armour
+- {size}: US 7, US 8, US 9, US 10, US 11, US 12, US 13, US 14, US 15, EU 41
+- {gender}: men, women, kids, unisex, boys, girls, youth, senior, plus size, athletic
+- {price range}: under $50, $50-$100, $100-$200, $200-$300, $300-$500, premium, budget, mid-range, luxury, clearance
+Content Analysis: Target footwear searches for specific brands, sizes, and genders, with an emphasis on price ranges and personalized options.
+4. Main brands and products mentioned, frequency and attitudes
+a. New Balance 990v5 (5 times, positive)
+b. Puma RS-X (10 times, positive)
+c. Nike Air Max 270 (3 times, neutral)
+</output_example>
+</correlation_analysis>
+
