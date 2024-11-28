@@ -7,11 +7,11 @@
 
 <context>Develop AI-powered SEO writing tool for e-commerce by understanding user needs through Reddit comment analysis.</context>
 
-<definitions>
+<detailed_analysis_protocol>
 Descriptive adjective: Words that provide detailed characteristics or qualities of a product, experience, or object.(e.g.,"durable","Comfortable") Please output the specific adjectives and their frequencies.
 Product needs description phrases: Specific language patterns expressing user requirements, expectations, or desired product features.(e.g.,"I need something that...","Easy to clean and maintain") Please summarize all the relevant phrases mentioned in the comments when outputting.
 Professional terminology usage: Specialized technical language specific to an industry or product category, indicating expertise and precise communication.(e.g., "Blockchain" in Tech domain,"Arch support" in Sneakers)
-</definitions>
+</detailed_analysis_protocol>
 <output_example>
 2.Language 
 a. Descriptive adjective: casual (6 times), basic (32 times)
