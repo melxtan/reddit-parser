@@ -193,7 +193,7 @@ class RedditAnalyzer:
                 logger.debug(f"Prompt length for {task_name}: {len(prompt)} characters")
                 
                 body = {
-                    "anthropic_version": "bedrock-2024-02-01",
+                    "anthropic_version": "bedrock-2023-05-31",
                     "max_tokens": 4096,
                     "messages": [
                         {
