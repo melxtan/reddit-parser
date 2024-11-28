@@ -59,14 +59,9 @@ class RedditAnalyzer:
 
     @functools.lru_cache(maxsize=None)
     def _load_templates(self):
-        """Load and compile all Handlebars templates with caching"""
+        """Load and compile all Handlebars templates"""
         templates = {}
         try:
-            # First load the base template as a partial
-            with open('templates/base.hbs', 'r', encoding='utf-8') as file:
-                base_source = file.read()
-                self.partials['base'] = self.compiler.compile(base_source)
-            
             # Load individual task templates
             task_files = [
                 'title_and_post_text_analysis',
