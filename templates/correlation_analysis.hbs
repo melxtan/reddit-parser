@@ -1,9 +1,14 @@
-{{> base
-    role="You are a professional Reddit data analyst specialized in user insight extraction"
-    task=(concat "Extract user demand insights from Reddit " search_query " comments and transform them into actionable SEO content strategies.")
-    requirements=(concat "Understand user needs by analyzing the title, post_text, num_comments, score, subreddit, created_utc, and comments of the posts under " search_query " on Reddit in the attachments. Please follow the strict <detailed_analysis_protocol> to perform the analysis. At the same time, the analysis results are output strictly in accordance with the format and order of output_example.")
-    context="Develop AI-powered SEO writing tool for e-commerce by understanding user needs through Reddit comment analysis"
-    detailed_analysis_protocol="Objective: By combining the analysis results of previous tasks, determine the problem type and analyze the user's pain point. Transform them into actionable SEO content strategies and output them according to the outline and instructions below.
+{{#> base}}
+  {{~#*inline "role"}}You are a professional Reddit data analyst specialized in user insight extraction{{/inline}}
+  
+  {{~#*inline "task"}}Extract user demand insights from Reddit {{search_query}} comments and transform them into actionable SEO content strategies.{{/inline}}
+  
+  {{~#*inline "requirements"}}Understand user needs by analyzing the title, post_text, num_comments, score, subreddit, created_utc, and comments of the posts under {{search_query}} on Reddit in the attachments. Please follow the strict <detailed_analysis_protocol> to perform the analysis. At the same time, the analysis results are output strictly in accordance with the format and order of output_example.{{/inline}}
+  
+  {{~#*inline "context"}}Develop AI-powered SEO writing tool for e-commerce by understanding user needs through Reddit comment analysis{{/inline}}
+  
+  {{~#*inline "detailed_analysis_protocol"}}
+Objective: By combining the analysis results of previous tasks, determine the problem type and analyze the user's pain point. Transform them into actionable SEO content strategies and output them according to the outline and instructions below.
 
 Problem Type Classification:
 - Technical issues
@@ -12,23 +17,28 @@ Problem Type Classification:
 - Value for money concerns
 
 Previous analysis results:
-{{previous_results}}"
-    output_example="SEO content strategies 
-1. Summary: Sneaker consumers are searching for lightweight, affordable footwear under $150, creating a prime opportunity for targeted SEO content. The key is to create comprehensive guides, comparison articles, and product reviews that highlight the value proposition of lightweight sneakers. Optimizing content around search terms like \"affordable performance sneakers,\" \"lightweight shoes under $150,\" and \"best budget athletic footwear\" can help brands directly connect with consumers seeking cost-effective, high-performance footwear solutions. 
+{{previous_results}}
+  {{/inline}}
+  
+  {{~#*inline "output_example"}}SEO content strategies 
+1. Summary: Sneaker consumers are searching for lightweight, affordable footwear under $150, creating a prime opportunity for targeted SEO content. The key is to create comprehensive guides, comparison articles, and product reviews that highlight the value proposition of lightweight sneakers. Optimizing content around search terms like "affordable performance sneakers," "lightweight shoes under $150," and "best budget athletic footwear" can help brands directly connect with consumers seeking cost-effective, high-performance footwear solutions. 
 2. Content theme direction:
 a. Recommendation of lightweight sports shoes with good value for money
 b. Guide to low-priced high-performance running shoes
 c. Evaluation of sports shoes with good value for money
 3. SEO keyword structure and content analysis
-a. where to buy {brand} sneakers in {size} for {gender}, {price range}
+a. where to buy [brand] sneakers in [size] for [gender], [price range]
 Variables:
-- {brand}: Nike, Adidas, Converse, New Balance, Jordan, Vans, Puma, Reebok, Skechers, Under Armour
-- {size}: US 7, US 8, US 9, US 10, US 11, US 12, US 13, US 14, US 15, EU 41
-- {gender}: men, women, kids, unisex, boys, girls, youth, senior, plus size, athletic
-- {price range}: under $50, $50-$100, $100-$200, $200-$300, $300-$500, premium, budget, mid-range, luxury, clearance
+- [brand]: Nike, Adidas, Converse, New Balance, Jordan, Vans, Puma, Reebok, Skechers, Under Armour
+- [size]: US 7, US 8, US 9, US 10, US 11, US 12, US 13, US 14, US 15, EU 41
+- [gender]: men, women, kids, unisex, boys, girls, youth, senior, plus size, athletic
+- [price range]: under $50, $50-$100, $100-$200, $200-$300, $300-$500, premium, budget, mid-range, luxury, clearance
 Content Analysis: Target footwear searches for specific brands, sizes, and genders, with an emphasis on price ranges and personalized options.
 4. Main brands and products mentioned, frequency and attitudes
 a. New Balance 990v5 (5 times, positive)
 b. Puma RS-X (10 times, positive)
-c. Nike Air Max 270 (3 times, neutral)"
-}}
+c. Nike Air Max 270 (3 times, neutral){{/inline}}
+{{/base}}
+
+Previous analysis results:
+{{previous_results}}
