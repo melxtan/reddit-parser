@@ -1,4 +1,4 @@
-<trend_analysis>
+<prompt>
 <task>Extract user demand insights from Reddit {{search_query}} comments and transform them into actionable SEO content strategies.</task>
 
 <requirements>Better identify user needs through time series analysis and trend prediction. Please follow the strict <detailed_analysis_protocol> to perform the analysis. Please strictly follow the format and order of output_example for output, and do not add unnecessary analysis.</requirements>
@@ -28,4 +28,4 @@ From warm design to multi-function
 From indoor to outdoor
 From basic needs to performance needs
 </output_example>
-</trend_analysis>
+</prompt>
