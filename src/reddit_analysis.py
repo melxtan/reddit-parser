@@ -1,19 +1,17 @@
 import json
 import logging
 import time
-import re
 from typing import List, Dict, Callable, Tuple
 import boto3
 from botocore.config import Config
-from pybars import Compiler
+import re
 from collections import defaultdict
-import functools
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
 class RedditAnalyzer:
-    def __init__(self, region_name="us-west-2", rate_limit_per_second=0.2, search_query=""):
+    def __init__(self, region_name="us-west-2", rate_limit_per_second=0.2):
         config = Config(
             region_name=region_name,
             retries=dict(
@@ -29,25 +27,8 @@ class RedditAnalyzer:
         
         self.rate_limit_per_second = rate_limit_per_second
         self._last_request_time = 0
-        self.compiler = Compiler()
-
-        def json_helper(this, value):
-            return json.dumps(value, indent=2)
-
-        def concat_helper(this, *args):
-            return ''.join([str(arg) for arg in args])
-        
-        # Add helpers for templates
-        self.helpers = {
-            'json': json_helper,
-            'concat': concat_helper
-        }
-        
-        # Initialize partials dict
-        self.partials = {}
-        self.templates = self._load_templates()
+        self.template = self._load_prompt_template()
         self.analysis_results = defaultdict(dict)
-        self.search_query = search_query
         
         self.tasks = [
             (1, "title_and_post_text_analysis"),
@@ -57,39 +38,38 @@ class RedditAnalyzer:
             (5, "correlation_analysis")
         ]
 
-    @functools.lru_cache(maxsize=None)
-    def _load_templates(self):
-        """Load and compile all Handlebars templates"""
-        templates = {}
+    def _load_prompt_template(self):
         try:
-            # Load individual task templates
-            task_files = [
-                'title_and_post_text_analysis',
-                'language_feature_extraction',
-                'sentiment_color_tracking',
-                'trend_analysis',
-                'correlation_analysis'
-            ]
-            
-            for task in task_files:
-                with open(f'templates/{task}.hbs', 'r', encoding='utf-8') as file:
-                    source = file.read()
-                    templates[task] = self.compiler.compile(source)
-            
-            return templates
-            
+            with open('prompts.txt', 'r', encoding='utf-8') as file:
+                return file.read()
         except Exception as e:
-            logger.error(f"Error loading templates: {str(e)}")
+            logger.error(f"Error loading template: {str(e)}")
             raise
 
-    def _get_task_prompt(self, task_name: str, context: Dict) -> str:
-        """Generate prompt using Handlebars template"""
-        try:
-            template = self.templates[task_name]
-            return template(context, helpers=self.helpers, partials=self.partials)
-        except Exception as e:
-            logger.error(f"Error generating prompt for {task_name}: {str(e)}")
-            raise
+    def _extract_tag_content(self, content: str, tag: str) -> str:
+        pattern = f"<{tag}>(.*?)</{tag}>"
+        match = re.search(pattern, content, re.DOTALL)
+        return match.group(1).strip() if match else ""
+
+    def _extract_task_components(self, task_name: str) -> Dict[str, str]:
+        task_pattern = f"<{task_name}>(.*?)</{task_name}>"
+        task_match = re.search(task_pattern, self.template, re.DOTALL)
+        
+        if not task_match:
+            raise ValueError(f"Could not find task section for {task_name}")
+            
+        task_content = task_match.group(1).strip()
+        
+        components = {
+            'task': self._extract_tag_content(task_content, 'task'),
+            'requirements': self._extract_tag_content(task_content, 'requirements'),
+            'role': self._extract_tag_content(task_content, 'role'),
+            'context': self._extract_tag_content(task_content, 'context'),
+            'protocol': self._extract_tag_content(task_content, 'detailed_analysis_protocol'),
+            'output_format': self._extract_tag_content(task_content, 'output_example')
+        }
+        
+        return components
 
     def _rate_limit(self):
         current_time = time.time()
@@ -118,9 +98,10 @@ class RedditAnalyzer:
                 
                 # Extract relevant sections using regex
                 for section in sections:
-                    pattern = fr"{section}.*?(?=\n\n|$)"
+                    pattern = f"{section}.*?(?=\n\n|\Z)"
                     matches = re.findall(pattern, result, re.DOTALL)
                     if matches:
+                        # Convert matches[0] to string if it's a list
                         section_content = str(matches[0]) if isinstance(matches[0], list) else matches[0]
                         formatted_results += f"- {section_content.strip()}\n"
         
@@ -130,23 +111,48 @@ class RedditAnalyzer:
         max_retries = 8
         base_delay = 10
         
+        try:
+            components = self._extract_task_components(task_name)
+        except ValueError as e:
+            logger.error(f"Error extracting task components: {str(e)}")
+            raise
+        
         for attempt in range(max_retries):
             try:
                 self._rate_limit()
                 
-                # Create context for templates
-                context = {
-                    'search_query': self.search_query,
-                    'posts': posts,
-                    'previous_results': self._format_previous_results() if task_name == "correlation_analysis" else None
-                }
+                # Create different prompts for correlation vs other tasks
+                if task_name == "correlation_analysis":
+                    try:
+                        previous_results = self._format_previous_results()
+                        prompt = (
+                            f"{components['role']}\n\n"
+                            f"Task: {components['task']}\n"
+                            f"Context: {components['context']}\n\n"
+                            f"Analysis Protocol:\n{components['protocol']}\n\n"
+                            f"You must format your response EXACTLY like this example:\n{components['output_format']}\n\n"
+                            f"Do not deviate from this format or add any additional explanations.\n\n"
+                            f"Previous analysis results to correlate:\n{previous_results}"
+                        )
+                    except Exception as e:
+                        logger.error(f"Error formatting previous results: {str(e)}")
+                        raise
+                else:
+                    prompt = (
+                        f"{components['role']}\n\n"
+                        f"Task: {components['task']}\n"
+                        f"Context: {components['context']}\n\n"
+                        f"Analysis Protocol:\n{components['protocol']}\n\n"
+                        f"You must format your response EXACTLY like this example:\n{components['output_format']}\n\n"
+                        f"Do not deviate from this format or add any additional explanations.\n\n"
+                        f"Data to analyze:\n{json.dumps(posts, indent=2)}"
+                    )
                 
-                # Generate prompt using template
-                prompt = self._get_task_prompt(task_name, context)
+                # Log prompt length for debugging
+                logger.debug(f"Prompt length for {task_name}: {len(prompt)} characters")
                 
-                # Use boto3 client with Claude 3
                 body = {
-                    "anthropic_version": "bedrock-2024-02-01",
+                    "anthropic_version": "bedrock-2023-05-31",
                     "max_tokens": 4096,
                     "messages": [
                         {
@@ -161,14 +167,27 @@ class RedditAnalyzer:
                 }
                 
                 response = self.bedrock.invoke_model(
-                    modelId="anthropic.claude-3-sonnet-20240229-v1:0",
+                    modelId="anthropic.claude-3-5-haiku-20241022-v1:0",
                     body=json.dumps(body),
                     accept="application/json",
                     contentType="application/json"
                 )
                 
                 response_body = json.loads(response['body'].read().decode())
-                content = response_body['content'][0]['text'] if 'content' in response_body else response_body
+                
+                # Handle different response formats
+                if isinstance(response_body, dict):
+                    content = response_body.get('content', '')
+                elif isinstance(response_body, list):
+                    content = response_body[0].get('content', '') if response_body else ''
+                else:
+                    content = str(response_body)
+                
+                # Ensure content is a string
+                if isinstance(content, list):
+                    content = ' '.join(str(item) for item in content)
+                elif not isinstance(content, str):
+                    content = str(content)
                 
                 result = {
                     'task_name': task_name,
@@ -177,7 +196,9 @@ class RedditAnalyzer:
                     'posts_analyzed': len(posts)
                 }
                 
+                # Store the result
                 self.analysis_results[task_name] = result
+                
                 return result
                 
             except Exception as e:
@@ -217,12 +238,10 @@ def analyze_reddit_data(post_data: List[Dict],
                        callback: Callable[[str, Dict], None],
                        region_name: str = "us-west-2",
                        rate_limit_per_second: float = 0.2,
-                       num_top_posts: int = 10,
-                       search_query: str = ""):
+                       num_top_posts: int = 10):
     analyzer = RedditAnalyzer(
         region_name=region_name,
-        rate_limit_per_second=rate_limit_per_second,
-        search_query=search_query
+        rate_limit_per_second=rate_limit_per_second
     )
     
     analyzer.analyze_posts(post_data, callback, num_top_posts)
