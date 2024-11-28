@@ -20,8 +20,6 @@ if "aws_creds" not in st.session_state:
     st.session_state.aws_creds = None
 if "task_containers" not in st.session_state:
     st.session_state.task_containers = {}
-if "current_query" not in st.session_state:
-    st.session_state.current_query = ""
 
 # Define task order
 task_order = [
@@ -37,16 +35,7 @@ password_input = st.text_input("Enter password to access the app:", type="passwo
 if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
     st.title("Reddit Post Scraper")
 
-    def on_search_query_change():
-        if "search_query" in st.session_state:
-            search_query = st.session_state.search_query
-            st.session_state.current_query = search_query
-
-    search_query = st.text_input(
-        "Enter a search query:", 
-        key="search_query",
-        on_change=on_search_query_change
-    )
+    search_query = st.text_input("Enter a search query:", key="search_query")
 
     col1, col2 = st.columns(2)
 
@@ -256,8 +245,7 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                         callback=update_task_status,
                         region_name=st.session_state.aws_creds["region"],
                         rate_limit_per_second=0.5,
-                        num_top_posts=20,
-                        search_query=st.session_state.current_query
+                        num_top_posts=20
                     )
                     
                 except Exception as e:
