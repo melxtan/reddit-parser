@@ -187,24 +187,16 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                     os.environ["AWS_ACCESS_KEY_ID"] = st.session_state.aws_creds["access_key"]
                     os.environ["AWS_SECRET_ACCESS_KEY"] = st.session_state.aws_creds["secret_key"]
                     
-                    # Create a container for analysis results
-                    analysis_container = st.container()
-                    
-                    with analysis_container:
-                        # Initialize containers for each task's section
-                        for task_name in task_order:
-                            st.subheader(task_name.replace('_', ' ').title())
-                            status_container = st.empty()
-                            result_container = st.empty()
-                            st.write("---")
-                            st.session_state.task_containers[task_name] = {
-                                'status': status_container,
-                                'result': result_container
-                            }
-                        
-                        # Container for download button
-                        download_container = st.empty()
-                        st.session_state.task_containers['download'] = download_container
+                    # Initialize containers for each task's section
+                    for task_name in task_order:
+                        st.subheader(task_name.replace('_', ' ').title())
+                        status_container = st.empty()
+                        result_container = st.empty()
+                        st.write("---")
+                        st.session_state.task_containers[task_name] = {
+                            'status': status_container,
+                            'result': result_container
+                        }
                     
                     # Reset analysis results
                     st.session_state.analysis_results = {}
@@ -228,16 +220,15 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                             containers['result'].write(result['analysis'])
                             st.session_state.analysis_results[task_name] = result
                             
-                            # If this was the last task, add a permanent download button
+                            # If this was the last task, add download button
                             if len(st.session_state.analysis_results) == len(task_order):
-                                with analysis_container:
-                                    st.download_button(
-                                        label="Download Complete Analysis (JSON)",
-                                        data=json.dumps(st.session_state.analysis_results, indent=2),
-                                        file_name=f"{filename}_analysis.json",
-                                        mime="application/json",
-                                        key="analysis_json_permanent"
-                                    )
+                                st.download_button(
+                                    label="Download Complete Analysis (JSON)",
+                                    data=json.dumps(st.session_state.analysis_results, indent=2),
+                                    file_name=f"{filename}_analysis.json",
+                                    mime="application/json",
+                                    key="analysis_json_final"
+                                )
                     
                     # Start analysis with callback
                     analyze_reddit_data(
@@ -251,11 +242,9 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                 except Exception as e:
                     st.error(f"Analysis failed: {str(e)}")
                     logging.exception("Analysis error:")
-            
-            # Always display existing results if available
-            if st.session_state.analysis_results:
-                st.write("---")
-                st.subheader("Analysis Results")
+
+            # If no analysis is running but we have results, display them
+            elif st.session_state.analysis_results:
                 for task_name in task_order:
                     if task_name in st.session_state.analysis_results:
                         result = st.session_state.analysis_results[task_name]
@@ -264,7 +253,7 @@ if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
                             st.write(result['analysis'])
                             st.write("---")
                 
-                # Show permanent download button for complete results
+                # Show download button for complete results
                 st.download_button(
                     label="Download Complete Analysis (JSON)",
                     data=json.dumps(st.session_state.analysis_results, indent=2),
