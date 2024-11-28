@@ -1,17 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <prompt>
 <task>Analyze the language characteristics of Reddit {{search_query}} comments and extract user needs insights.</task>
-
-<requirements>According to the <definitions> provided below, analyze the language characteristics of post_text and comments in the attachments to gain insight into customer needs. Strictly follow output_example, and output the specific content and frequency of each descriptive adjective, product requirement description phrase, and professional terminology in order. Please eliminate repetitive language proactively and prioritize comments with high score ranking. </requirements>
-
+<requirements>According to the &lt;definitions&gt; provided below, analyze the language characteristics of post_text and comments in the attachments to gain insight into customer needs. Strictly follow output_example, and output the specific content and frequency of each descriptive adjective, product requirement description phrase, and professional terminology in order. Please eliminate repetitive language proactively and prioritize comments with high score ranking.</requirements>
 <role>You are a professional Reddit data analyst specialized in user insight extraction</role>
-
 <context>Develop AI-powered SEO writing tool for e-commerce by understanding user needs through Reddit comment analysis.</context>
-
-<detailed_analysis_protocol>
+<detailed_analysis_protocol><![CDATA[
 Descriptive adjective: Words that provide detailed characteristics or qualities of a product, experience, or object.(e.g.,"durable","Comfortable") Please output the specific adjectives and their frequencies.
 Product needs description phrases: Specific language patterns expressing user requirements, expectations, or desired product features.(e.g.,"I need something that...","Easy to clean and maintain") Please summarize all the relevant phrases mentioned in the comments when outputting.
 Professional terminology usage: Specialized technical language specific to an industry or product category, indicating expertise and precise communication.(e.g., "Blockchain" in Tech domain,"Arch support" in Sneakers)
-</detailed_analysis_protocol>
+]]></detailed_analysis_protocol>
 <output_example>
 2.Language 
 a. Descriptive adjective: casual (6 times), basic (32 times)
