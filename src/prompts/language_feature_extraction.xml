@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<prompt>
+<language_feature_extraction>
 <task>Analyze the language characteristics of Reddit {{search_query}} comments and extract user needs insights.</task>
 <requirements>According to the &lt;definitions&gt; provided below, analyze the language characteristics of post_text and comments in the attachments to gain insight into customer needs. Strictly follow output_example, and output the specific content and frequency of each descriptive adjective, product requirement description phrase, and professional terminology in order. Please eliminate repetitive language proactively and prioritize comments with high score ranking.</requirements>
 <role>You are a professional Reddit data analyst specialized in user insight extraction</role>
@@ -15,4 +14,4 @@ a. Descriptive adjective: casual (6 times), basic (32 times)
 b. Product needs description phrases: a good pair of white sneakers, cheap quality, not too mainstream
 c Professional terminology usage: suede (2 times)
 </output_example>
-</prompt>
+</language_feature_extraction>
