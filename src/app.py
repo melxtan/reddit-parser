@@ -63,7 +63,7 @@ def main():
 
     password_input = st.text_input("Enter password to access the app:", type="password", key="password_input")
 
-    if password_input == st.secrets["APP_PASSWORD"]:
+    if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
         st.title("Reddit Post Scraper")
 
         search_query = st.text_input("Enter a search query:", key="search_query")
