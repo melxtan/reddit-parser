@@ -12,6 +12,7 @@ from prompt_utils import load_prompt
 
 logger = logging.getLogger(__name__)
 
+
 class RedditAnalyzer:
     _instance = None
     TASKS = [
@@ -28,26 +29,25 @@ class RedditAnalyzer:
             cls._instance._initialized = False
         return cls._instance
 
-    def __init__(self, region_name: str = "us-west-2", rate_limit_per_second: float = 0.2) -> None:
+    def __init__(
+        self, region_name: str = "us-west-2", rate_limit_per_second: float = 0.2
+    ) -> None:
         if self._initialized:
             return
 
         config = Config(
             region_name=region_name,
-            retries=dict(
-                max_attempts=8,
-                mode="adaptive"
-            )
+            retries=dict(max_attempts=8, mode="adaptive"),
         )
-        
+
         self.bedrock = boto3.client(
             service_name="bedrock-runtime",
-            config=config
+            config=config,
         )
-        
+
         self.rate_limit_per_second = rate_limit_per_second
         self._request_timestamps = []
-        self._max_requests_per_minute = 40  # AWS quota
+        self._max_requests_per_minute = 40
         self._initialized = True
 
     def _extract_tag_content(self, content: str, tag: str) -> str:
@@ -57,9 +57,7 @@ class RedditAnalyzer:
 
     def _extract_task_components(self, task_name: str) -> Dict[str, str]:
         try:
-            # Load the prompt template for the specific task
             task_content = load_prompt(task_name)
-            
             components = {
                 "task": self._extract_tag_content(task_content, "task"),
                 "requirements": self._extract_tag_content(task_content, "requirements"),
@@ -70,16 +68,13 @@ class RedditAnalyzer:
                 ),
                 "output_format": self._extract_tag_content(task_content, "output_example"),
             }
-
             return components
-            
         except Exception as e:
             logger.error(f"Error extracting task components: {str(e)}")
             raise
 
     def _rate_limit(self) -> None:
         current_time = time.time()
-        # Remove timestamps older than 1 minute
         self._request_timestamps = [
             ts for ts in self._request_timestamps if current_time - ts < 60
         ]
@@ -88,20 +83,16 @@ class RedditAnalyzer:
         )
 
         if len(self._request_timestamps) >= self._max_requests_per_minute:
-            # Wait until we have capacity
             sleep_time = 60 - (current_time - self._request_timestamps[0])
             if sleep_time > 0:
                 time.sleep(sleep_time)
             self._request_timestamps = self._request_timestamps[1:]
 
         self._request_timestamps.append(current_time)
-        logger.debug(
-            f"Added new timestamp. Updated count: {len(self._request_timestamps)}"
-        )
+        logger.debug(f"Added new timestamp. Updated count: {len(self._request_timestamps)}")
 
     def _format_previous_results(self, analysis_results: defaultdict) -> str:
         formatted_results = "\nPrevious Analysis Results Summary:\n"
-
         task_sections = {
             "title_and_post_text_analysis": ["Purpose"],
             "language_feature_extraction": [
@@ -201,16 +192,12 @@ class RedditAnalyzer:
 
         for attempt in range(max_retries):
             try:
-                logger.debug(
-                    f"Attempt {attempt + 1}/{max_retries} for task {task_name}"
-                )
+                logger.debug(f"Attempt {attempt + 1}/{max_retries} for task {task_name}")
                 self._rate_limit()
 
                 if task_name == "correlation_analysis":
                     try:
-                        previous_results = self._format_previous_results(
-                            analysis_results
-                        )
+                        previous_results = self._format_previous_results(analysis_results)
                         prompt = (
                             f"{components['role']}\n\n"
                             f"Task: {components['task']}\n"
@@ -246,11 +233,10 @@ class RedditAnalyzer:
                     "stop_sequences": [],
                 }
 
-                # Store the request body and prompt for debugging
                 request_debug_info = {
                     "prompt": prompt,
                     "request_body": body,
-                    "task_components": components
+                    "task_components": components,
                 }
 
                 logger.debug(f"Sending request to Bedrock for task {task_name}")
@@ -270,14 +256,13 @@ class RedditAnalyzer:
                     "task_number": task_number,
                     "analysis": content,
                     "posts_analyzed": len(posts),
-                    "request_body": request_debug_info  # Include debug info in result
+                    "request_body": request_debug_info,
                 }
                 logger.info(
                     f"Successfully completed task {task_name} on attempt {attempt + 1}"
                 )
 
                 analysis_results[task_name] = result
-
                 return result
 
             except Exception as e:
@@ -302,7 +287,6 @@ class RedditAnalyzer:
         top_posts = sorted_posts[:num_top_posts]
 
         logger.info(f"Starting analysis of {len(top_posts)} top posts")
-
         analysis_results = defaultdict(dict)
 
         for task_number, task_name in RedditAnalyzer.TASKS:
@@ -315,23 +299,23 @@ class RedditAnalyzer:
             except Exception as e:
                 logger.error(f"Failed to analyze task {task_name}: {str(e)}")
                 error_result = {
-                    'task_name': task_name,
-                    'task_number': task_number,
-                    'error': str(e),
-                    'posts_analyzed': 0
+                    "task_name": task_name,
+                    "task_number": task_number,
+                    "error": str(e),
+                    "posts_analyzed": 0,
                 }
                 callback(task_name, error_result)
+
 
 def analyze_reddit_data(
     post_data: List[Dict],
     callback: Callable[[str, Dict[str, Any]], None],
     region_name: str = "us-west-2",
     rate_limit_per_second: float = 0.2,
-    num_top_posts: int = 10
+    num_top_posts: int = 10,
 ) -> None:
     analyzer = RedditAnalyzer(
         region_name=region_name,
-        rate_limit_per_second=rate_limit_per_second
+        rate_limit_per_second=rate_limit_per_second,
     )
-    
     analyzer.analyze_posts(post_data, callback, num_top_posts)
