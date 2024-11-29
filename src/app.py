@@ -270,7 +270,7 @@ def run_analysis(post_data, task_order, filename):
 
         num_top_posts = 10
         st.info(
-            f"Due to rate limit, we are currently only analyzing top {num_top_posts} posts with highest scores."
+            f"Due to rate limit, we are currently only analyzing up to top {num_top_posts} posts with highest scores."
         )
 
         create_task_containers(task_order)
