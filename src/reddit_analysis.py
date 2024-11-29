@@ -246,6 +246,13 @@ class RedditAnalyzer:
                     "stop_sequences": [],
                 }
 
+                # Store the request body and prompt for debugging
+                request_debug_info = {
+                    "prompt": prompt,
+                    "request_body": body,
+                    "task_components": components
+                }
+
                 logger.debug(f"Sending request to Bedrock for task {task_name}")
                 response = self.bedrock.invoke_model(
                     modelId="us.anthropic.claude-3-5-haiku-20241022-v1:0",
@@ -263,6 +270,7 @@ class RedditAnalyzer:
                     "task_number": task_number,
                     "analysis": content,
                     "posts_analyzed": len(posts),
+                    "request_body": request_debug_info  # Include debug info in result
                 }
                 logger.info(
                     f"Successfully completed task {task_name} on attempt {attempt + 1}"
