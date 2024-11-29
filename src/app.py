@@ -1,4 +1,3 @@
-
 import io
 import json
 import logging
@@ -195,6 +194,8 @@ def create_task_containers(task_order):
     for task_name in task_order:
         st.subheader(task_name.replace("_", " ").title())
         status_container = st.empty()
+        # Add initial status message showing "Running {task_name}..."
+        status_container.info(f"Running {task_name.replace('_', ' ').title()}...")
         result_container = st.empty()
         st.write("---")
         st.session_state.task_containers[task_name] = {
@@ -233,6 +234,9 @@ def run_analysis(post_data, task_order, filename):
         os.environ["AWS_ACCESS_KEY_ID"] = st.session_state.aws_creds["access_key"]
         os.environ["AWS_SECRET_ACCESS_KEY"] = st.session_state.aws_creds["secret_key"]
 
+        num_top_posts = 10  # Define the number of top posts to analyze
+        st.info(f"Due to rate limit, we are currently only analyzing top {num_top_posts} posts with highest scores.")
+
         create_task_containers(task_order)
         st.session_state.analysis_results = {}
 
@@ -244,7 +248,7 @@ def run_analysis(post_data, task_order, filename):
             callback=callback,
             region_name=st.session_state.aws_creds["region"],
             rate_limit_per_second=0.5,
-            num_top_posts=20,
+            num_top_posts=num_top_posts,
         )
 
     except Exception as e:
