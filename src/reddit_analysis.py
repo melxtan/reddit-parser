@@ -1,4 +1,3 @@
-
 import json
 import logging
 import os
@@ -9,6 +8,7 @@ from typing import Any, Callable, Dict, List
 
 import boto3
 from botocore.config import Config
+from prompt_utils import load_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -48,21 +48,7 @@ class RedditAnalyzer:
         self.rate_limit_per_second = rate_limit_per_second
         self._request_timestamps = []
         self._max_requests_per_minute = 40  # AWS quota
-        self.template = self._load_prompt_template()
-
         self._initialized = True
-
-    def _load_prompt_template(self) -> str:
-        try:
-            # Get the directory where the current Python file is located
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            prompt_path = os.path.join(current_dir, "prompts.txt")
-
-            with open(prompt_path, "r", encoding="utf-8") as file:
-                return file.read()
-        except Exception as e:
-            logger.error(f"Error loading template: {str(e)}")
-            raise
 
     def _extract_tag_content(self, content: str, tag: str) -> str:
         pattern = f"<{tag}>(.*?)</{tag}>"
@@ -70,26 +56,26 @@ class RedditAnalyzer:
         return match.group(1).strip() if match else ""
 
     def _extract_task_components(self, task_name: str) -> Dict[str, str]:
-        task_pattern = f"<{task_name}>(.*?)</{task_name}>"
-        task_match = re.search(task_pattern, self.template, re.DOTALL)
+        try:
+            # Load the prompt template for the specific task
+            task_content = load_prompt(task_name)
+            
+            components = {
+                "task": self._extract_tag_content(task_content, "task"),
+                "requirements": self._extract_tag_content(task_content, "requirements"),
+                "role": self._extract_tag_content(task_content, "role"),
+                "context": self._extract_tag_content(task_content, "context"),
+                "protocol": self._extract_tag_content(
+                    task_content, "detailed_analysis_protocol"
+                ),
+                "output_format": self._extract_tag_content(task_content, "output_example"),
+            }
 
-        if not task_match:
-            raise ValueError(f"Could not find task section for {task_name}")
-
-        task_content = task_match.group(1).strip()
-
-        components = {
-            "task": self._extract_tag_content(task_content, "task"),
-            "requirements": self._extract_tag_content(task_content, "requirements"),
-            "role": self._extract_tag_content(task_content, "role"),
-            "context": self._extract_tag_content(task_content, "context"),
-            "protocol": self._extract_tag_content(
-                task_content, "detailed_analysis_protocol"
-            ),
-            "output_format": self._extract_tag_content(task_content, "output_example"),
-        }
-
-        return components
+            return components
+            
+        except Exception as e:
+            logger.error(f"Error extracting task components: {str(e)}")
+            raise
 
     def _rate_limit(self) -> None:
         current_time = time.time()
@@ -262,7 +248,7 @@ class RedditAnalyzer:
 
                 logger.debug(f"Sending request to Bedrock for task {task_name}")
                 response = self.bedrock.invoke_model(
-                    modelId="us.anthropic.claude-3-5-haiku-20241022-v1:0",  # "anthropic.claude-3-5-haiku-20241022-v1:0",
+                    modelId="us.anthropic.claude-3-5-haiku-20241022-v1:0",
                     body=json.dumps(body),
                     accept="application/json",
                     contentType="application/json",
