@@ -236,21 +236,37 @@ def update_task_status(task_name: str, result: dict, task_order: list, filename:
                 )
             with col2:
                 if st.button("Run New Analysis"):
-                    # Reset all relevant session state variables
                     st.session_state.analysis_results = {}
                     st.session_state.task_containers = {}
                     st.session_state.post_data = None
-                    # Reset scraper-specific variables
-                    if 'search_query' in st.session_state:
-                        st.session_state.search_query = ""
-                    if 'max_posts' in st.session_state:
-                        st.session_state.max_posts = 10
-                    if 'use_api' in st.session_state:
-                        st.session_state.use_api = True
-                    if 'log_level' in st.session_state:
-                        st.session_state.log_level = "INFO"
                     st.rerun()
 
+
+def display_analysis_results(task_order, filename):
+    for task_name in task_order:
+        if task_name in st.session_state.analysis_results:
+            result = st.session_state.analysis_results[task_name]
+            if "error" not in result:
+                st.subheader(task_name.replace("_", " ").title())
+                st.write(result["analysis"])
+                st.divider()
+
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.download_button(
+            label="Download Complete Analysis (JSON)",
+            data=json.dumps(st.session_state.analysis_results, indent=2),
+            file_name=f"{filename}_analysis.json",
+            mime="application/json",
+            key="analysis_json_final",
+        )
+    with col2:
+        if st.button("Run New Analysis"):
+            # Only reset non-widget session state
+            st.session_state.analysis_results = {}
+            st.session_state.task_containers = {}
+            st.session_state.post_data = None
+            st.rerun()
 
 def display_analysis_results(task_order, filename):
     for task_name in task_order:
