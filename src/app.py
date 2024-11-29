@@ -292,15 +292,6 @@ def display_analysis_results(task_order, filename):
             st.session_state.analysis_results = {}
             st.session_state.task_containers = {}
             st.session_state.post_data = None
-            # Reset scraper-specific variables
-            if 'search_query' in st.session_state:
-                st.session_state.search_query = ""
-            if 'max_posts' in st.session_state:
-                st.session_state.max_posts = 10
-            if 'use_api' in st.session_state:
-                st.session_state.use_api = True
-            if 'log_level' in st.session_state:
-                st.session_state.log_level = "INFO"
             st.rerun()
 
 
