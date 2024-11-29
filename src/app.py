@@ -193,7 +193,7 @@ def create_task_containers(task_order):
     progress_container = st.empty()
     progress_bar = progress_container.progress(0)
     
-    # Create containers for each task with better organization
+    # Create containers for each task
     containers = {}
     for idx, task_name in enumerate(task_order):
         try:
@@ -204,15 +204,14 @@ def create_task_containers(task_order):
             logger.warning(f"Could not load prompt title for {task_name}: {e}")
             task_title = task_name.replace("_", " ").title()
 
-        with st.expander(task_title, expanded=True):
-            status_container = st.empty()
-            result_container = st.empty()
-            debug_container = st.empty()
+        st.subheader(task_title)
+        status_container = st.empty()
+        result_container = st.empty()
+        st.divider()
         
         containers[task_name] = {
             "status": status_container,
             "result": result_container,
-            "debug": debug_container,
         }
         
         # Update overall progress
@@ -233,11 +232,6 @@ def update_task_status(task_name: str, result: dict, task_order: list, filename:
     else:
         containers["status"].success(f"{task_display_name} completed")
         containers["result"].write(result["analysis"])
-
-        if "request_body" in result:
-            with containers["debug"].expander("Show Analysis Details"):
-                st.json(result["request_body"])
-
         st.session_state.analysis_results[task_name] = result
 
         # Only show download button when all analyses are complete
@@ -258,6 +252,30 @@ def update_task_status(task_name: str, result: dict, task_order: list, filename:
                     st.rerun()
 
 
+def display_analysis_results(task_order, filename):
+    for task_name in task_order:
+        if task_name in st.session_state.analysis_results:
+            result = st.session_state.analysis_results[task_name]
+            if "error" not in result:
+                st.subheader(task_name.replace("_", " ").title())
+                st.write(result["analysis"])
+                st.divider()
+
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.download_button(
+            label="Download Complete Analysis (JSON)",
+            data=json.dumps(st.session_state.analysis_results, indent=2),
+            file_name=f"{filename}_analysis.json",
+            mime="application/json",
+            key="analysis_json_final",
+        )
+    with col2:
+        if st.button("Run New Analysis"):
+            st.session_state.analysis_results = {}
+            st.rerun()
+
+
 def run_analysis(post_data, task_order, filename):
     try:
         os.environ["AWS_ACCESS_KEY_ID"] = st.session_state.aws_creds["access_key"]
@@ -271,7 +289,6 @@ def run_analysis(post_data, task_order, filename):
         with st.spinner("Initializing analysis..."):
             st.session_state.task_containers = create_task_containers(task_order)
             st.session_state.analysis_results = {}
-            st.session_state.debug_info = {}
 
         def callback(task_name: str, result: dict) -> None:
             update_task_status(task_name, result, task_order, filename)
@@ -287,33 +304,6 @@ def run_analysis(post_data, task_order, filename):
     except Exception as e:
         st.error(f"Analysis failed: {str(e)}")
         logging.exception("Analysis error:")
-
-
-def display_analysis_results(task_order, filename):
-    for task_name in task_order:
-        if task_name in st.session_state.analysis_results:
-            result = st.session_state.analysis_results[task_name]
-            if "error" not in result:
-                with st.expander(task_name.replace("_", " ").title(), expanded=True):
-                    st.write(result["analysis"])
-                    
-                    if "request_body" in result:
-                        with st.expander("Show Analysis Details"):
-                            st.json(result["request_body"])
-
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        st.download_button(
-            label="Download Complete Analysis (JSON)",
-            data=json.dumps(st.session_state.analysis_results, indent=2),
-            file_name=f"{filename}_analysis.json",
-            mime="application/json",
-            key="analysis_json_final",
-        )
-    with col2:
-        if st.button("Run New Analysis"):
-            st.session_state.analysis_results = {}
-            st.rerun()
 
 
 def main():
