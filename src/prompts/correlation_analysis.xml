@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<prompt>
+<correlation_analysis>
 <task>Extract user demand insights from Reddit {{search_query}} comments and transform them into actionable SEO content strategies.</task>
 
 <requirements>By combining the analysis results of &lt;title_and_post_text_analysis&gt;, &lt;language_feature_extraction&gt;, &lt;sentiment_color_tracking&gt;, and &lt;trend_analysis&gt;, determine the problem type and analyze the user pain points, transform them into actionable SEO content strategies, and output them according to the outline and instructions below. Please give priority to comments with high rankings. Please follow the strict &lt;detailed_analysis_protocol&gt; for analysis. At the same time, the analysis results are output strictly in the format and order of output_example.</requirements>
@@ -44,4 +43,4 @@ a. New Balance 990v5 (5 times, positive)
 b. Puma RS-X (10 times, positive)
 c. Nike Air Max 270 (3 times, neutral)
 </output_example>
-</prompt>
+</correlation_analysis>
