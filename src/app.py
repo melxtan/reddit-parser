@@ -187,15 +187,9 @@ def create_download_buttons(df, post_data, search_query, search_option, time_fil
 
     return filename
 
-
 def create_task_containers(task_order):
-    # Create a container for overall progress
-    progress_container = st.empty()
-    progress_bar = progress_container.progress(0)
-    
-    # Create containers for each task
-    containers = {}
-    for idx, task_name in enumerate(task_order):
+    st.session_state.task_containers = {}
+    for task_name in task_order:
         try:
             prompt_content = load_prompt(task_name)
             title = re.search(r"<title>(.*?)</title>", prompt_content)
@@ -206,19 +200,14 @@ def create_task_containers(task_order):
 
         st.subheader(task_title)
         status_container = st.empty()
+        status_container.info(f"Running {task_title}...")
         result_container = st.empty()
         st.divider()
         
-        containers[task_name] = {
+        st.session_state.task_containers[task_name] = {
             "status": status_container,
             "result": result_container,
         }
-        
-        # Update overall progress
-        progress_bar.progress((idx + 1) / len(task_order))
-    
-    progress_container.empty()  # Remove progress bar when done
-    return containers
 
 
 def update_task_status(task_name: str, result: dict, task_order: list, filename: str):
@@ -234,7 +223,6 @@ def update_task_status(task_name: str, result: dict, task_order: list, filename:
         containers["result"].write(result["analysis"])
         st.session_state.analysis_results[task_name] = result
 
-        # Only show download button when all analyses are complete
         if len(st.session_state.analysis_results) == len(task_order):
             st.success("Analysis completed successfully")
             col1, col2 = st.columns([3, 1])
@@ -250,7 +238,6 @@ def update_task_status(task_name: str, result: dict, task_order: list, filename:
                 if st.button("Run New Analysis"):
                     st.session_state.analysis_results = {}
                     st.rerun()
-
 
 def display_analysis_results(task_order, filename):
     for task_name in task_order:
@@ -286,9 +273,8 @@ def run_analysis(post_data, task_order, filename):
             f"Due to rate limit, we are currently only analyzing top {num_top_posts} posts with highest scores."
         )
 
-        with st.spinner("Initializing analysis..."):
-            st.session_state.task_containers = create_task_containers(task_order)
-            st.session_state.analysis_results = {}
+        create_task_containers(task_order)
+        st.session_state.analysis_results = {}
 
         def callback(task_name: str, result: dict) -> None:
             update_task_status(task_name, result, task_order, filename)
