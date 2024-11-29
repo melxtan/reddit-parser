@@ -29,6 +29,34 @@ def initialize_app() -> None:
         st.session_state.debug_info = {}
 
 
+def handle_aws_credentials():
+    if not st.session_state.aws_creds:
+        with st.sidebar.form("aws_creds_form"):
+            aws_access_key = st.text_input(
+                "AWS Access Key ID", type="password", key="aws_access_key"
+            )
+            aws_secret_key = st.text_input(
+                "AWS Secret Access Key", type="password", key="aws_secret_key"
+            )
+            aws_region = st.text_input("AWS Region", value="us-west-2", key="aws_region")
+
+            if st.form_submit_button("Save AWS Credentials"):
+                if aws_access_key and aws_secret_key:
+                    st.session_state.aws_creds = {
+                        "access_key": aws_access_key,
+                        "secret_key": aws_secret_key,
+                        "region": aws_region,
+                    }
+                    st.sidebar.success("AWS credentials saved!")
+                else:
+                    st.sidebar.error("Please enter both AWS Access Key ID and Secret Access Key")
+    else:
+        st.sidebar.success("AWS credentials are set")
+        if st.sidebar.button("Clear AWS Credentials", key="clear_creds"):
+            st.session_state.aws_creds = None
+            st.rerun()
+
+
 def render_search_interface():
     search_query = st.text_input("Enter a search query:", key="search_query")
     col1, col2 = st.columns(2)
@@ -160,34 +188,6 @@ def create_download_buttons(df, post_data, search_query, search_option, time_fil
     return filename
 
 
-def handle_aws_credentials():
-    if not st.session_state.aws_creds:
-        with st.form("aws_creds_form"):
-            aws_access_key = st.text_input(
-                "AWS Access Key ID", type="password", key="aws_access_key"
-            )
-            aws_secret_key = st.text_input(
-                "AWS Secret Access Key", type="password", key="aws_secret_key"
-            )
-            aws_region = st.text_input("AWS Region", value="us-west-2", key="aws_region")
-
-            if st.form_submit_button("Save AWS Credentials"):
-                if aws_access_key and aws_secret_key:
-                    st.session_state.aws_creds = {
-                        "access_key": aws_access_key,
-                        "secret_key": aws_secret_key,
-                        "region": aws_region,
-                    }
-                    st.success("AWS credentials saved!")
-                else:
-                    st.error("Please enter both AWS Access Key ID and Secret Access Key")
-    else:
-        st.success("AWS credentials are set")
-        if st.button("Clear AWS Credentials", key="clear_creds"):
-            st.session_state.aws_creds = None
-            st.rerun()
-
-
 def create_task_containers(task_order):
     for task_name in task_order:
         try:
@@ -304,11 +304,22 @@ def main():
 
     initialize_app()
 
-    password_input = st.text_input(
-        "Enter password to access the app:", type="password", key="password_input"
-    )
+    # Move password input to sidebar
+    with st.sidebar:
+        st.title("Authentication")
+        password_input = st.text_input(
+            "Enter password to access the app:", type="password", key="password_input"
+        )
+        
+        if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
+            st.success("Authentication successful!")
+            
+            # Move AWS credentials section to sidebar
+            st.title("AWS Credentials")
+            handle_aws_credentials()
 
-    if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
+    # Main content area
+    if password_input == st.secrets["APP_PASSWORD"]:
         st.title("Reddit Post Scraper")
 
         search_query, search_option, time_filter, max_posts, use_api, log_level = (
@@ -342,9 +353,6 @@ def main():
                 df, st.session_state.post_data, search_query, search_option, time_filter
             )
 
-            st.subheader("AWS Credentials")
-            handle_aws_credentials()
-
             if st.session_state.aws_creds:
                 st.subheader("Reddit Post Analysis")
 
@@ -354,7 +362,7 @@ def main():
                     display_analysis_results(task_order, filename)
 
     else:
-        st.error("Incorrect password. Access denied.")
+        st.sidebar.error("Incorrect password. Access denied.")
 
 
 if __name__ == "__main__":
