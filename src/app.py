@@ -2,12 +2,13 @@ import io
 import json
 import logging
 import os
+import re
 
 import pandas as pd
 import streamlit as st
 from reddit_analysis import analyze_reddit_data
 from scrape_reddit import ScrapeReddit
-
+from prompt_utils import load_prompt
 
 # Initialize logging and session state
 def initialize_app():
@@ -24,6 +25,8 @@ def initialize_app():
         st.session_state.aws_creds = None
     if "task_containers" not in st.session_state:
         st.session_state.task_containers = {}
+    if "debug_info" not in st.session_state:
+        st.session_state.debug_info = {}
 
 
 def render_search_interface():
@@ -192,15 +195,24 @@ def handle_aws_credentials():
 
 def create_task_containers(task_order):
     for task_name in task_order:
-        st.subheader(task_name.replace("_", " ").title())
+        try:
+            prompt_content = load_prompt(task_name)
+            title = re.search(r"<title>(.*?)</title>", prompt_content)
+            task_title = title.group(1) if title else task_name.replace("_", " ").title()
+        except Exception as e:
+            logger.warning(f"Could not load prompt title for {task_name}: {e}")
+            task_title = task_name.replace("_", " ").title()
+
+        st.subheader(task_title)
         status_container = st.empty()
-        # Add initial status message showing "Running {task_name}..."
-        status_container.info(f"Running {task_name.replace('_', ' ').title()}...")
+        status_container.info(f"Running {task_title}...")
         result_container = st.empty()
+        debug_container = st.expander("Show Request Details")
         st.write("---")
         st.session_state.task_containers[task_name] = {
             "status": status_container,
             "result": result_container,
+            "debug": debug_container,
         }
 
 
@@ -208,6 +220,7 @@ def update_task_status(
     task_name: str, result: dict, task_order: list, filename: str
 ) -> None:
     containers = st.session_state.task_containers[task_name]
+    
     if "error" in result:
         containers["status"].error(
             f"Error in {task_name.replace('_', ' ').title()}: {result['error']}"
@@ -217,6 +230,13 @@ def update_task_status(
             f"{task_name.replace('_', ' ').title()} completed!"
         )
         containers["result"].write(result["analysis"])
+        
+        # Display debug information if available
+        if task_name in st.session_state.debug_info:
+            with containers["debug"]:
+                st.subheader("Request Details")
+                st.json(st.session_state.debug_info[task_name])
+        
         st.session_state.analysis_results[task_name] = result
 
         if len(st.session_state.analysis_results) == len(task_order):
@@ -234,13 +254,17 @@ def run_analysis(post_data, task_order, filename):
         os.environ["AWS_ACCESS_KEY_ID"] = st.session_state.aws_creds["access_key"]
         os.environ["AWS_SECRET_ACCESS_KEY"] = st.session_state.aws_creds["secret_key"]
 
-        num_top_posts = 10  # Define the number of top posts to analyze
+        num_top_posts = 10
         st.info(f"Due to rate limit, we are currently only analyzing top {num_top_posts} posts with highest scores.")
 
         create_task_containers(task_order)
         st.session_state.analysis_results = {}
+        st.session_state.debug_info = {}
 
         def callback(task_name: str, result: dict) -> None:
+            # Store the request details in session state
+            if 'request_body' in result:
+                st.session_state.debug_info[task_name] = result['request_body']
             update_task_status(task_name, result, task_order, filename)
 
         analyze_reddit_data(
@@ -263,6 +287,13 @@ def display_analysis_results(task_order, filename):
             if "error" not in result:
                 st.subheader(task_name.replace("_", " ").title())
                 st.write(result["analysis"])
+                
+                # Display debug information if available
+                if task_name in st.session_state.debug_info:
+                    with st.expander("Show Request Details"):
+                        st.subheader("Request Details")
+                        st.json(st.session_state.debug_info[task_name])
+                
                 st.write("---")
 
     st.download_button(
@@ -311,6 +342,7 @@ def main():
                         st.session_state.post_data = post_data
                         st.session_state.analysis_results = {}
                         st.session_state.task_containers = {}
+                        st.session_state.debug_info = {}
             else:
                 st.warning("Please enter a search query.")
 
