@@ -10,8 +10,8 @@ from reddit_analysis import analyze_reddit_data
 from scrape_reddit import ScrapeReddit
 from prompt_utils import load_prompt
 
-# Initialize logging and session state
-def initialize_app():
+
+def initialize_app() -> None:
     logging.basicConfig(
         level=st.secrets.get("LOG_LEVEL", "INFO"),
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -31,7 +31,6 @@ def initialize_app():
 
 def render_search_interface():
     search_query = st.text_input("Enter a search query:", key="search_query")
-
     col1, col2 = st.columns(2)
 
     with col1:
@@ -170,9 +169,7 @@ def handle_aws_credentials():
             aws_secret_key = st.text_input(
                 "AWS Secret Access Key", type="password", key="aws_secret_key"
             )
-            aws_region = st.text_input(
-                "AWS Region", value="us-west-2", key="aws_region"
-            )
+            aws_region = st.text_input("AWS Region", value="us-west-2", key="aws_region")
 
             if st.form_submit_button("Save AWS Credentials"):
                 if aws_access_key and aws_secret_key:
@@ -183,9 +180,7 @@ def handle_aws_credentials():
                     }
                     st.success("AWS credentials saved!")
                 else:
-                    st.error(
-                        "Please enter both AWS Access Key ID and Secret Access Key"
-                    )
+                    st.error("Please enter both AWS Access Key ID and Secret Access Key")
     else:
         st.success("AWS credentials are set")
         if st.button("Clear AWS Credentials", key="clear_creds"):
@@ -216,27 +211,22 @@ def create_task_containers(task_order):
         }
 
 
-def update_task_status(
-    task_name: str, result: dict, task_order: list, filename: str
-) -> None:
+def update_task_status(task_name: str, result: dict, task_order: list, filename: str):
     containers = st.session_state.task_containers[task_name]
-    
+
     if "error" in result:
         containers["status"].error(
             f"Error in {task_name.replace('_', ' ').title()}: {result['error']}"
         )
     else:
-        containers["status"].success(
-            f"{task_name.replace('_', ' ').title()} completed!"
-        )
+        containers["status"].success(f"{task_name.replace('_', ' ').title()} completed!")
         containers["result"].write(result["analysis"])
-        
-        # Display debug information if available
-        if task_name in st.session_state.debug_info:
+
+        if "request_body" in result:
             with containers["debug"]:
                 st.subheader("Request Details")
-                st.json(st.session_state.debug_info[task_name])
-        
+                st.json(result["request_body"])
+
         st.session_state.analysis_results[task_name] = result
 
         if len(st.session_state.analysis_results) == len(task_order):
@@ -255,16 +245,15 @@ def run_analysis(post_data, task_order, filename):
         os.environ["AWS_SECRET_ACCESS_KEY"] = st.session_state.aws_creds["secret_key"]
 
         num_top_posts = 10
-        st.info(f"Due to rate limit, we are currently only analyzing top {num_top_posts} posts with highest scores.")
+        st.info(
+            f"Due to rate limit, we are currently only analyzing top {num_top_posts} posts with highest scores."
+        )
 
         create_task_containers(task_order)
         st.session_state.analysis_results = {}
         st.session_state.debug_info = {}
 
         def callback(task_name: str, result: dict) -> None:
-            # Store the request details in session state
-            if 'request_body' in result:
-                st.session_state.debug_info[task_name] = result['request_body']
             update_task_status(task_name, result, task_order, filename)
 
         analyze_reddit_data(
@@ -287,13 +276,12 @@ def display_analysis_results(task_order, filename):
             if "error" not in result:
                 st.subheader(task_name.replace("_", " ").title())
                 st.write(result["analysis"])
-                
-                # Display debug information if available
-                if task_name in st.session_state.debug_info:
+
+                if "request_body" in result:
                     with st.expander("Show Request Details"):
                         st.subheader("Request Details")
-                        st.json(st.session_state.debug_info[task_name])
-                
+                        st.json(result["request_body"])
+
                 st.write("---")
 
     st.download_button(
