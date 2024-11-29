@@ -1,113 +1,16 @@
-import os
-import xml.etree.ElementTree as ET
-from dataclasses import dataclass
-from typing import Dict, List, Optional, Any, Callable
+
 import json
 import logging
+import os
+import re
 import time
+from collections import defaultdict
+from typing import Any, Callable, Dict, List
+
 import boto3
 from botocore.config import Config
 
 logger = logging.getLogger(__name__)
-
-@dataclass
-class PromptComponent:
-    task: str
-    requirements: str
-    role: str
-    context: str
-    protocol: str
-    output_format: str
-
-@dataclass
-class TaskDefinition:
-    name: str
-    number: int
-    component: PromptComponent
-
-class PromptHandler:
-    def __init__(self, prompts_dir: str):
-        """
-        Initialize PromptHandler with a directory containing XML prompt files.
-        
-        Args:
-            prompts_dir: Directory containing the XML prompt files
-        """
-        self.prompts_dir = prompts_dir
-        self.tasks = self._load_tasks()
-
-    def _load_prompt_file(self, task_name: str) -> PromptComponent:
-        """Load and parse a single XML prompt file."""
-        file_path = os.path.join(self.prompts_dir, f"{task_name}.xml")
-        
-        try:
-            tree = ET.parse(file_path)
-            root = tree.getroot()
-            
-            component = PromptComponent(
-                task=root.find('task').text.strip(),
-                requirements=root.find('requirements').text.strip(),
-                role=root.find('role').text.strip(),
-                context=root.find('context').text.strip(),
-                protocol=root.find('detailed_analysis_protocol').text.strip(),
-                output_format=root.find('output_example').text.strip()
-            )
-            return component
-            
-        except Exception as e:
-            logger.error(f"Error loading prompt file {file_path}: {str(e)}")
-            raise
-
-    def _load_tasks(self) -> List[TaskDefinition]:
-        """Load all task definitions from XML files."""
-        tasks = []
-        for task_number, task_name in RedditAnalyzer.TASKS:
-            try:
-                component = self._load_prompt_file(task_name)
-                tasks.append(TaskDefinition(
-                    name=task_name,
-                    number=task_number,
-                    component=component
-                ))
-            except Exception as e:
-                logger.error(f"Failed to load task {task_name}: {str(e)}")
-                raise
-        
-        return tasks
-
-    def format_prompt(self, task_def: TaskDefinition, posts: List[Dict], previous_results: Optional[str] = None) -> str:
-        """Format the prompt for a specific task."""
-        component = task_def.component
-        
-        # Get the search query from the first post (assuming all posts have the same search query)
-        search_query = posts[0].get('search_query', '') if posts else ''
-        
-        # Replace {{search_query}} in task text
-        task = component.task.replace('{{search_query}}', search_query)
-        
-        if task_def.name == "correlation_analysis":
-            prompt = (
-                f"{component.role}\n\n"
-                f"Task: {task}\n"
-                f"Context: {component.context}\n\n"
-                f"Analysis Protocol:\n{component.protocol}\n\n"
-                f"You must format your response EXACTLY like this example:\n{component.output_format}\n\n"
-                f"Do not deviate from this format or add any additional explanations.\n\n"
-                f"Previous analysis results to correlate:\n{previous_results}"
-            )
-        else:
-            prompt = (
-                f"{component.role}\n\n"
-                f"Task: {task}\n"
-                f"Context: {component.context}\n\n"
-                f"Requirements:\n{component.requirements}\n\n"
-                f"Definitions and Examples:\n{component.protocol}\n\n"
-                f"You must format your response EXACTLY like this example:\n{component.output_format}\n\n"
-                f"Do not deviate from this format or add any additional explanations.\n\n"
-                f"Data to analyze:\n{json.dumps(posts, indent=2)}"
-            )
-        
-        return prompt
 
 class RedditAnalyzer:
     _instance = None
@@ -145,48 +48,148 @@ class RedditAnalyzer:
         self.rate_limit_per_second = rate_limit_per_second
         self._request_timestamps = []
         self._max_requests_per_minute = 40  # AWS quota
-        
-        # Initialize prompt handler with prompts directory
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        prompts_dir = os.path.join(current_dir, "prompts")
-        self.prompt_handler = PromptHandler(prompts_dir)
-        
+        self.template = self._load_prompt_template()
+
         self._initialized = True
 
-    def _format_previous_results(self, analysis_results: Dict) -> str:
-        formatted_results = "\nPrevious Analysis Results Summary:\n"
-        
-        for task_def in self.prompt_handler.tasks[:-1]:  # Exclude correlation analysis
-            if task_def.name in analysis_results:
-                result = analysis_results[task_def.name]["analysis"]
-                formatted_results += f"\n{task_def.name}:\n{result}\n"
-        
-        return formatted_results
+    def _load_prompt_template(self) -> str:
+        try:
+            # Get the directory where the current Python file is located
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            prompt_path = os.path.join(current_dir, "prompts.txt")
+
+            with open(prompt_path, "r", encoding="utf-8") as file:
+                return file.read()
+        except Exception as e:
+            logger.error(f"Error loading template: {str(e)}")
+            raise
+
+    def _extract_tag_content(self, content: str, tag: str) -> str:
+        pattern = f"<{tag}>(.*?)</{tag}>"
+        match = re.search(pattern, content, re.DOTALL)
+        return match.group(1).strip() if match else ""
+
+    def _extract_task_components(self, task_name: str) -> Dict[str, str]:
+        task_pattern = f"<{task_name}>(.*?)</{task_name}>"
+        task_match = re.search(task_pattern, self.template, re.DOTALL)
+
+        if not task_match:
+            raise ValueError(f"Could not find task section for {task_name}")
+
+        task_content = task_match.group(1).strip()
+
+        components = {
+            "task": self._extract_tag_content(task_content, "task"),
+            "requirements": self._extract_tag_content(task_content, "requirements"),
+            "role": self._extract_tag_content(task_content, "role"),
+            "context": self._extract_tag_content(task_content, "context"),
+            "protocol": self._extract_tag_content(
+                task_content, "detailed_analysis_protocol"
+            ),
+            "output_format": self._extract_tag_content(task_content, "output_example"),
+        }
+
+        return components
 
     def _rate_limit(self) -> None:
         current_time = time.time()
+        # Remove timestamps older than 1 minute
         self._request_timestamps = [
             ts for ts in self._request_timestamps if current_time - ts < 60
         ]
-        
+        logger.debug(
+            f"Current request count in last minute: {len(self._request_timestamps)}/{self._max_requests_per_minute}"
+        )
+
         if len(self._request_timestamps) >= self._max_requests_per_minute:
+            # Wait until we have capacity
             sleep_time = 60 - (current_time - self._request_timestamps[0])
             if sleep_time > 0:
                 time.sleep(sleep_time)
             self._request_timestamps = self._request_timestamps[1:]
 
         self._request_timestamps.append(current_time)
+        logger.debug(
+            f"Added new timestamp. Updated count: {len(self._request_timestamps)}"
+        )
+
+    def _format_previous_results(self, analysis_results: defaultdict) -> str:
+        formatted_results = "\nPrevious Analysis Results Summary:\n"
+
+        task_sections = {
+            "title_and_post_text_analysis": ["Purpose"],
+            "language_feature_extraction": [
+                "Descriptive adjective",
+                "Product needs description phrases",
+                "Professional terminology usage",
+            ],
+            "sentiment_color_tracking": [
+                "Overall_sentiment",
+                "Contextual sentiment interpretation",
+            ],
+            "trend_analysis": [
+                "Post publication time distribution",
+                "Comment peak periods",
+                "Discussion activity variations",
+                "Trend Prediction",
+            ],
+        }
+
+        for task_name, sections in task_sections.items():
+            if task_name in analysis_results:
+                result = analysis_results[task_name]["analysis"]
+                formatted_results += f"\n{task_name}:\n"
+
+                for section in sections:
+                    pattern = rf"{section}.*?(?=\n\n|$)"
+                    matches = re.findall(pattern, result, re.DOTALL)
+                    if matches:
+                        section_content = (
+                            str(matches[0])
+                            if isinstance(matches[0], list)
+                            else matches[0]
+                        )
+                        formatted_results += f"- {section_content.strip()}\n"
+
+        return formatted_results
 
     def _clean_response_content(self, response_body: Any) -> str:
         try:
             if isinstance(response_body, dict):
                 if "content" in response_body:
                     if isinstance(response_body["content"], list):
-                        return response_body["content"][0]["text"] if response_body["content"] else ""
+                        return (
+                            response_body["content"][0]["text"]
+                            if response_body["content"]
+                            else ""
+                        )
                     elif isinstance(response_body["content"], dict):
                         return response_body["content"].get("text", "")
                     else:
                         return str(response_body["content"])
+
+                if "messages" in response_body and response_body["messages"]:
+                    message = response_body["messages"][0]
+                    if isinstance(message, dict):
+                        if "content" in message:
+                            if isinstance(message["content"], list):
+                                return (
+                                    message["content"][0]["text"]
+                                    if message["content"]
+                                    else ""
+                                )
+                            elif isinstance(message["content"], dict):
+                                return message["content"].get("text", "")
+                            else:
+                                return str(message["content"])
+
+            elif isinstance(response_body, list) and response_body:
+                first_item = response_body[0]
+                if isinstance(first_item, dict):
+                    if "text" in first_item:
+                        return first_item["text"]
+                    elif "content" in first_item:
+                        return first_item["content"]
 
             return str(response_body)
 
@@ -194,17 +197,58 @@ class RedditAnalyzer:
             logger.error(f"Error cleaning response content: {str(e)}")
             return str(response_body)
 
-    def _analyze_task(self, posts: List[Dict], task_def: TaskDefinition, analysis_results: Dict) -> Dict:
+    def _analyze_task(
+        self,
+        posts: List[Dict],
+        task_name: str,
+        task_number: int,
+        analysis_results: defaultdict,
+    ) -> Dict[str, Any]:
         max_retries = 3
         base_delay = 2
 
+        try:
+            components = self._extract_task_components(task_name)
+        except ValueError as e:
+            logger.error(f"Error extracting task components: {str(e)}")
+            raise
+
         for attempt in range(max_retries):
             try:
-                logger.debug(f"Attempt {attempt + 1}/{max_retries} for task {task_def.name}")
+                logger.debug(
+                    f"Attempt {attempt + 1}/{max_retries} for task {task_name}"
+                )
                 self._rate_limit()
 
-                previous_results = self._format_previous_results(analysis_results) if task_def.name == "correlation_analysis" else None
-                prompt = self.prompt_handler.format_prompt(task_def, posts, previous_results)
+                if task_name == "correlation_analysis":
+                    try:
+                        previous_results = self._format_previous_results(
+                            analysis_results
+                        )
+                        prompt = (
+                            f"{components['role']}\n\n"
+                            f"Task: {components['task']}\n"
+                            f"Context: {components['context']}\n\n"
+                            f"Analysis Protocol:\n{components['protocol']}\n\n"
+                            f"You must format your response EXACTLY like this example:\n{components['output_format']}\n\n"
+                            f"Do not deviate from this format or add any additional explanations.\n\n"
+                            f"Previous analysis results to correlate:\n{previous_results}"
+                        )
+                    except Exception as e:
+                        logger.error(f"Error formatting previous results: {str(e)}")
+                        raise
+                else:
+                    prompt = (
+                        f"{components['role']}\n\n"
+                        f"Task: {components['task']}\n"
+                        f"Context: {components['context']}\n\n"
+                        f"Analysis Protocol:\n{components['protocol']}\n\n"
+                        f"You must format your response EXACTLY like this example:\n{components['output_format']}\n\n"
+                        f"Do not deviate from this format or add any additional explanations.\n\n"
+                        f"Data to analyze:\n{json.dumps(posts, indent=2)}"
+                    )
+
+                logger.debug(f"Prompt length for {task_name}: {len(prompt)} characters")
 
                 body = {
                     "anthropic_version": "bedrock-2023-05-31",
@@ -216,67 +260,81 @@ class RedditAnalyzer:
                     "stop_sequences": [],
                 }
 
+                logger.debug(f"Sending request to Bedrock for task {task_name}")
                 response = self.bedrock.invoke_model(
-                    modelId="us.anthropic.claude-3-5-haiku-20241022-v1:0",
+                    modelId="us.anthropic.claude-3-5-haiku-20241022-v1:0",  # "anthropic.claude-3-5-haiku-20241022-v1:0",
                     body=json.dumps(body),
                     accept="application/json",
                     contentType="application/json",
                 )
+                logger.debug(f"Received response from Bedrock for task {task_name}")
 
                 response_body = json.loads(response["body"].read().decode())
                 content = self._clean_response_content(response_body)
 
-                return {
-                    "task_name": task_def.name,
-                    "task_number": task_def.number,
+                result = {
+                    "task_name": task_name,
+                    "task_number": task_number,
                     "analysis": content,
-                    "posts_analyzed": len(posts)
+                    "posts_analyzed": len(posts),
                 }
+                logger.info(
+                    f"Successfully completed task {task_name} on attempt {attempt + 1}"
+                )
+
+                analysis_results[task_name] = result
+
+                return result
 
             except Exception as e:
                 if attempt == max_retries - 1:
-                    logger.error(f"Final retry failed for task {task_def.name}: {str(e)}")
+                    logger.error(f"Final retry failed for task {task_name}: {str(e)}")
                     raise
 
                 delay = base_delay * (2**attempt)
-                logger.warning(f"Attempt {attempt + 1} failed for task {task_def.name}, retrying in {delay} seconds...")
+                logger.warning(
+                    f"Attempt {attempt + 1} failed for task {task_name}, retrying in {delay} seconds..."
+                )
                 time.sleep(delay)
+                continue
 
-    def analyze_posts(self, posts: List[Dict], callback: Callable[[str, Dict], None], num_top_posts: int = 10) -> None:
+    def analyze_posts(
+        self,
+        posts: List[Dict],
+        callback: Callable[[str, Dict[str, Any]], None],
+        num_top_posts: int = 10,
+    ) -> None:
         sorted_posts = sorted(posts, key=lambda x: x["score"], reverse=True)
         top_posts = sorted_posts[:num_top_posts]
-        
-        logger.info(f"Starting analysis of {len(top_posts)} top posts")
-        analysis_results = {}
 
-        for task_def in self.prompt_handler.tasks:
+        logger.info(f"Starting analysis of {len(top_posts)} top posts")
+
+        analysis_results = defaultdict(dict)
+
+        for task_number, task_name in RedditAnalyzer.TASKS:
             try:
-                result = self._analyze_task(top_posts, task_def, analysis_results)
-                logger.info(f"Successfully completed {task_def.name}")
-                analysis_results[task_def.name] = result
-                callback(task_def.name, result)
+                result = self._analyze_task(
+                    top_posts, task_name, task_number, analysis_results
+                )
+                logger.info(f"Successfully completed {task_name}")
+                callback(task_name, result)
             except Exception as e:
-                logger.error(f"Failed to analyze task {task_def.name}: {str(e)}")
+                logger.error(f"Failed to analyze task {task_name}: {str(e)}")
                 error_result = {
-                    'task_name': task_def.name,
-                    'task_number': task_def.number,
+                    'task_name': task_name,
+                    'task_number': task_number,
                     'error': str(e),
                     'posts_analyzed': 0
                 }
-                callback(task_def.name, error_result)
+                callback(task_name, error_result)
 
 def analyze_reddit_data(
     post_data: List[Dict],
     callback: Callable[[str, Dict[str, Any]], None],
     region_name: str = "us-west-2",
     rate_limit_per_second: float = 0.2,
-    num_top_posts: int = 10,
-    search_query: str = ""  # Add search_query parameter
+    num_top_posts: int = 10
 ) -> None:
-    # Add search_query to each post
-    for post in post_data:
-        post['search_query'] = search_query
-        
     analyzer = RedditAnalyzer(
         region_name=region_name,
         rate_limit_per_second=rate_limit_per_second
