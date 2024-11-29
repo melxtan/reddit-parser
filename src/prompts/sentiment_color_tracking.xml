@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<prompt>
+<sentiment_color_tracking>
 <task>Extract user demand insights from Reddit {{search_query}} comments and transform them into actionable SEO content strategies.</task>
 <requirements>Perform sentiment analysis on the post_text and comments in the attachment to gain insight into user needs. Please prioritize comments with high scores and strictly follow &lt;detailed_analysis_protocol&gt; for analysis. Output the analysis results strictly in the format and order of output_example, and do not output redundant content.</requirements>
 <role>You are a professional Reddit data analyst specialized in user insight extraction</role>
@@ -13,4 +12,4 @@ Contextual sentiment interpretation: Consider sarcasm, detect implicit emotional
 a. Overall_sentiment: positive
 b. Contextual sentiment interpretation: "Another 'revolutionary' sneaker design that's identical to last year's. Innovation at its finest." "Innovation at its finest" is actually ironic, implying that the brand lacks innovation.
 </output_example>
-</prompt>
+</sentiment_color_tracking>
