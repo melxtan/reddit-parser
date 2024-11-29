@@ -189,7 +189,13 @@ def create_download_buttons(df, post_data, search_query, search_option, time_fil
 
 
 def create_task_containers(task_order):
-    for task_name in task_order:
+    # Create a container for overall progress
+    progress_container = st.empty()
+    progress_bar = progress_container.progress(0)
+    
+    # Create containers for each task with better organization
+    containers = {}
+    for idx, task_name in enumerate(task_order):
         try:
             prompt_content = load_prompt(task_name)
             title = re.search(r"<title>(.*?)</title>", prompt_content)
@@ -198,45 +204,58 @@ def create_task_containers(task_order):
             logger.warning(f"Could not load prompt title for {task_name}: {e}")
             task_title = task_name.replace("_", " ").title()
 
-        st.subheader(task_title)
-        status_container = st.empty()
-        status_container.info(f"Running {task_title}...")
-        result_container = st.empty()
-        debug_container = st.expander("Show Request Details")
-        st.write("---")
-        st.session_state.task_containers[task_name] = {
+        with st.expander(task_title, expanded=True):
+            status_container = st.empty()
+            result_container = st.empty()
+            debug_container = st.empty()
+        
+        containers[task_name] = {
             "status": status_container,
             "result": result_container,
             "debug": debug_container,
         }
+        
+        # Update overall progress
+        progress_bar.progress((idx + 1) / len(task_order))
+    
+    progress_container.empty()  # Remove progress bar when done
+    return containers
 
 
 def update_task_status(task_name: str, result: dict, task_order: list, filename: str):
     containers = st.session_state.task_containers[task_name]
+    task_display_name = task_name.replace("_", " ").title()
 
     if "error" in result:
         containers["status"].error(
-            f"Error in {task_name.replace('_', ' ').title()}: {result['error']}"
+            f"Error in {task_display_name}: {result['error']}"
         )
     else:
-        containers["status"].success(f"{task_name.replace('_', ' ').title()} completed!")
+        containers["status"].success(f"{task_display_name} completed")
         containers["result"].write(result["analysis"])
 
         if "request_body" in result:
-            with containers["debug"]:
-                st.subheader("Request Details")
+            with containers["debug"].expander("Show Analysis Details"):
                 st.json(result["request_body"])
 
         st.session_state.analysis_results[task_name] = result
 
+        # Only show download button when all analyses are complete
         if len(st.session_state.analysis_results) == len(task_order):
-            st.download_button(
-                label="Download Complete Analysis (JSON)",
-                data=json.dumps(st.session_state.analysis_results, indent=2),
-                file_name=f"{filename}_analysis.json",
-                mime="application/json",
-                key="analysis_json_final",
-            )
+            st.success("Analysis completed successfully")
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.download_button(
+                    label="Download Complete Analysis (JSON)",
+                    data=json.dumps(st.session_state.analysis_results, indent=2),
+                    file_name=f"{filename}_analysis.json",
+                    mime="application/json",
+                    key="analysis_json_final",
+                )
+            with col2:
+                if st.button("Run New Analysis"):
+                    st.session_state.analysis_results = {}
+                    st.rerun()
 
 
 def run_analysis(post_data, task_order, filename):
@@ -249,9 +268,10 @@ def run_analysis(post_data, task_order, filename):
             f"Due to rate limit, we are currently only analyzing top {num_top_posts} posts with highest scores."
         )
 
-        create_task_containers(task_order)
-        st.session_state.analysis_results = {}
-        st.session_state.debug_info = {}
+        with st.spinner("Initializing analysis..."):
+            st.session_state.task_containers = create_task_containers(task_order)
+            st.session_state.analysis_results = {}
+            st.session_state.debug_info = {}
 
         def callback(task_name: str, result: dict) -> None:
             update_task_status(task_name, result, task_order, filename)
@@ -274,23 +294,26 @@ def display_analysis_results(task_order, filename):
         if task_name in st.session_state.analysis_results:
             result = st.session_state.analysis_results[task_name]
             if "error" not in result:
-                st.subheader(task_name.replace("_", " ").title())
-                st.write(result["analysis"])
+                with st.expander(task_name.replace("_", " ").title(), expanded=True):
+                    st.write(result["analysis"])
+                    
+                    if "request_body" in result:
+                        with st.expander("Show Analysis Details"):
+                            st.json(result["request_body"])
 
-                if "request_body" in result:
-                    with st.expander("Show Request Details"):
-                        st.subheader("Request Details")
-                        st.json(result["request_body"])
-
-                st.write("---")
-
-    st.download_button(
-        label="Download Complete Analysis (JSON)",
-        data=json.dumps(st.session_state.analysis_results, indent=2),
-        file_name=f"{filename}_analysis.json",
-        mime="application/json",
-        key="analysis_json_final",
-    )
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.download_button(
+            label="Download Complete Analysis (JSON)",
+            data=json.dumps(st.session_state.analysis_results, indent=2),
+            file_name=f"{filename}_analysis.json",
+            mime="application/json",
+            key="analysis_json_final",
+        )
+    with col2:
+        if st.button("Run New Analysis"):
+            st.session_state.analysis_results = {}
+            st.rerun()
 
 
 def main():
@@ -319,7 +342,7 @@ def main():
             handle_aws_credentials()
 
     # Main content area
-    if password_input == st.secrets["APP_PASSWORD"]:
+    if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
         st.title("Reddit Post Scraper")
 
         search_query, search_option, time_filter, max_posts, use_api, log_level = (
