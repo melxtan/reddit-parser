@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<prompt>
+<trend_analysis>
 <task>Extract user demand insights from Reddit {{search_query}} comments and transform them into actionable SEO content strategies.</task>
 <requirements>Better identify user needs through time series analysis and trend prediction. Please follow the strict &lt;detailed_analysis_protocol&gt; to perform the analysis. Please strictly follow the format and order of output_example for output, and do not add unnecessary analysis.</requirements>
 <role>You are a professional Reddit data analyst specialized in user insight extraction</role>
@@ -25,4 +24,4 @@ From warm design to multi-function
 From indoor to outdoor
 From basic needs to performance needs
 </output_example>
-</prompt>
+</trend_analysis>
