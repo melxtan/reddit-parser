@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import re
 import time
 from collections import defaultdict
 from typing import Any, Callable, Dict, List
@@ -50,29 +49,6 @@ class RedditAnalyzer:
         self._max_requests_per_minute = 40
         self._initialized = True
 
-    def _extract_tag_content(self, content: str, tag: str) -> str:
-        pattern = f"<{tag}>(.*?)</{tag}>"
-        match = re.search(pattern, content, re.DOTALL)
-        return match.group(1).strip() if match else ""
-
-    def _extract_task_components(self, task_name: str) -> Dict[str, str]:
-        try:
-            task_content = load_prompt(task_name)
-            components = {
-                "task": self._extract_tag_content(task_content, "task"),
-                "requirements": self._extract_tag_content(task_content, "requirements"),
-                "role": self._extract_tag_content(task_content, "role"),
-                "context": self._extract_tag_content(task_content, "context"),
-                "protocol": self._extract_tag_content(
-                    task_content, "detailed_analysis_protocol"
-                ),
-                "output_format": self._extract_tag_content(task_content, "output_example"),
-            }
-            return components
-        except Exception as e:
-            logger.error(f"Error extracting task components: {str(e)}")
-            raise
-
     def _rate_limit(self) -> None:
         current_time = time.time()
         self._request_timestamps = [
@@ -118,15 +94,7 @@ class RedditAnalyzer:
                 formatted_results += f"\n{task_name}:\n"
 
                 for section in sections:
-                    pattern = rf"{section}.*?(?=\n\n|$)"
-                    matches = re.findall(pattern, result, re.DOTALL)
-                    if matches:
-                        section_content = (
-                            str(matches[0])
-                            if isinstance(matches[0], list)
-                            else matches[0]
-                        )
-                        formatted_results += f"- {section_content.strip()}\n"
+                    formatted_results += f"- {result}\n"
 
         return formatted_results
 
@@ -184,12 +152,6 @@ class RedditAnalyzer:
         max_retries = 3
         base_delay = 2
 
-        try:
-            components = self._extract_task_components(task_name)
-        except ValueError as e:
-            logger.error(f"Error extracting task components: {str(e)}")
-            raise
-
         for attempt in range(max_retries):
             try:
                 logger.debug(f"Attempt {attempt + 1}/{max_retries} for task {task_name}")
@@ -198,28 +160,14 @@ class RedditAnalyzer:
                 if task_name == "correlation_analysis":
                     try:
                         previous_results = self._format_previous_results(analysis_results)
-                        prompt = (
-                            f"{components['role']}\n\n"
-                            f"Task: {components['task']}\n"
-                            f"Context: {components['context']}\n\n"
-                            f"Analysis Protocol:\n{components['protocol']}\n\n"
-                            f"You must format your response EXACTLY like this example:\n{components['output_format']}\n\n"
-                            f"Do not deviate from this format or add any additional explanations.\n\n"
-                            f"Previous analysis results to correlate:\n{previous_results}"
-                        )
+                        prompt_template = load_prompt(task_name)
+                        prompt = f"{prompt_template}\n\nPrevious analysis results to correlate:\n{previous_results}"
                     except Exception as e:
                         logger.error(f"Error formatting previous results: {str(e)}")
                         raise
                 else:
-                    prompt = (
-                        f"{components['role']}\n\n"
-                        f"Task: {components['task']}\n"
-                        f"Context: {components['context']}\n\n"
-                        f"Analysis Protocol:\n{components['protocol']}\n\n"
-                        f"You must format your response EXACTLY like this example:\n{components['output_format']}\n\n"
-                        f"Do not deviate from this format or add any additional explanations.\n\n"
-                        f"Data to analyze:\n{json.dumps(posts, indent=2)}"
-                    )
+                    prompt_template = load_prompt(task_name)
+                    prompt = f"{prompt_template}\n\nData to analyze:\n{json.dumps(posts, indent=2)}"
 
                 logger.debug(f"Prompt length for {task_name}: {len(prompt)} characters")
 
@@ -236,7 +184,6 @@ class RedditAnalyzer:
                 request_debug_info = {
                     "prompt": prompt,
                     "request_body": body,
-                    "task_components": components,
                 }
 
                 logger.debug(f"Sending request to Bedrock for task {task_name}")
