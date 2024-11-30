@@ -8,17 +8,45 @@ import boto3
 from botocore.config import Config
 from prompt_utils import load_prompt
 
+from reddit_scraper.llm_caller import LLMCaller, LLMConfig
+
 logger = logging.getLogger(__name__)
+
+
+def prepare_posts_for_llm(posts: List[Dict], min_comment_score: int = 1) -> str:
+    # First un-stringify the comments that were JSON stringified
+    for post in posts:
+        if isinstance(post["comments"], str):
+            post["comments"] = json.loads(post["comments"])
+
+        if "created_at" in post:
+            post["created_at"] = post["created_at"].split()[
+                0
+            ]  # Get date part before first space. from "2024-10-31 17:23:59 UTC", to "2024-10-31"
+
+        # Filter out low-score comments and clean up timestamps
+        post["comments"] = [
+            {
+                **comment,
+                "created_at": comment["created_at"].split()[0]
+                if "created_at" in comment
+                else None,
+            }
+            for comment in post["comments"]
+            if comment["score"] >= min_comment_score
+        ]
+
+    return json.dumps(posts, ensure_ascii=False, indent=2)
 
 
 class RedditAnalyzer:
     _instance = None
     TASKS = [
-        (1, "title_and_post_text_analysis"),
-        (2, "language_feature_extraction"),
-        (3, "sentiment_color_tracking"),
-        (4, "trend_analysis"),
-        (5, "correlation_analysis"),
+        "post_types_analysis",
+        "keyword_pattern_analysis",
+        "sentiment_analysis",
+        "trend_analysis",
+        "proposed_SEO_content_strategies",
     ]
 
     def __new__(cls, *args, **kwargs):
@@ -38,11 +66,16 @@ class RedditAnalyzer:
             retries=dict(max_attempts=8, mode="adaptive"),
         )
 
-        self.bedrock = boto3.client(
+        bedrock = boto3.client(
             service_name="bedrock-runtime",
             config=config,
         )
 
+        llm_config = LLMConfig(
+            model_id="us.anthropic.claude-3-5-haiku-20241022-v1:0",
+        )
+
+        self.llm_caller = LLMCaller(bedrock, llm_config)
         self.rate_limit_per_second = rate_limit_per_second
         self._request_timestamps = []
         self._max_requests_per_minute = 40
@@ -64,145 +97,68 @@ class RedditAnalyzer:
             self._request_timestamps = self._request_timestamps[1:]
 
         self._request_timestamps.append(current_time)
-        logger.debug(f"Added new timestamp. Updated count: {len(self._request_timestamps)}")
+        logger.debug(
+            f"Added new timestamp. Updated count: {len(self._request_timestamps)}"
+        )
 
-    def _format_previous_results(self, analysis_results: defaultdict) -> str:
-        formatted_results = "\nPrevious Analysis Results Summary:\n"
-        task_sections = {
-            "title_and_post_text_analysis": ["Purpose"],
-            "language_feature_extraction": [
-                "Descriptive adjective",
-                "Product needs description phrases",
-                "Professional terminology usage",
-            ],
-            "sentiment_color_tracking": [
-                "Overall_sentiment",
-                "Contextual sentiment interpretation",
-            ],
-            "trend_analysis": [
-                "Post publication time distribution",
-                "Comment peak periods",
-                "Discussion activity variations",
-                "Trend Prediction",
-            ],
-        }
+    def _format_previous_results(self, analysis_results: defaultdict) -> dict[str, str]:
+        formatted_results = {}
+        for key, result in analysis_results.items():
+            analysis_text = result.get("analysis", "")
 
-        for task_name, sections in task_sections.items():
-            if task_name in analysis_results:
-                result = analysis_results[task_name]["analysis"]
-                formatted_results += f"\n{task_name}:\n"
-
-                for section in sections:
-                    formatted_results += f"- {result}\n"
+            # Check if the content is already properly wrapped in correct XML tags
+            if not (
+                analysis_text.startswith(f"<{key}>")
+                and analysis_text.endswith(f"</{key}>")
+            ):
+                # Wrap the content in appropriate XML tags
+                formatted_results[key] = f"<{key}>{analysis_text}</{key}>"
+            else:
+                formatted_results[key] = analysis_text
 
         return formatted_results
 
-    def _clean_response_content(self, response_body: Any) -> str:
-        try:
-            if isinstance(response_body, dict):
-                if "content" in response_body:
-                    if isinstance(response_body["content"], list):
-                        return (
-                            response_body["content"][0]["text"]
-                            if response_body["content"]
-                            else ""
-                        )
-                    elif isinstance(response_body["content"], dict):
-                        return response_body["content"].get("text", "")
-                    else:
-                        return str(response_body["content"])
-
-                if "messages" in response_body and response_body["messages"]:
-                    message = response_body["messages"][0]
-                    if isinstance(message, dict):
-                        if "content" in message:
-                            if isinstance(message["content"], list):
-                                return (
-                                    message["content"][0]["text"]
-                                    if message["content"]
-                                    else ""
-                                )
-                            elif isinstance(message["content"], dict):
-                                return message["content"].get("text", "")
-                            else:
-                                return str(message["content"])
-
-            elif isinstance(response_body, list) and response_body:
-                first_item = response_body[0]
-                if isinstance(first_item, dict):
-                    if "text" in first_item:
-                        return first_item["text"]
-                    elif "content" in first_item:
-                        return first_item["content"]
-
-            return str(response_body)
-
-        except Exception as e:
-            logger.error(f"Error cleaning response content: {str(e)}")
-            return str(response_body)
-
     def _analyze_task(
         self,
-        posts: List[Dict],
+        scraped_info: str,
+        posts_analyzed: int,
         task_name: str,
         task_number: int,
         analysis_results: defaultdict,
+        search_query: str,
     ) -> Dict[str, Any]:
         max_retries = 3
         base_delay = 2
 
+        variables = {
+            "search_query": search_query,
+            "scraped_info": scraped_info,
+        }
         for attempt in range(max_retries):
             try:
                 logger.debug(f"Attempt {attempt + 1}/{max_retries} for task {task_name}")
                 self._rate_limit()
 
-                if task_name == "correlation_analysis":
-                    try:
-                        previous_results = self._format_previous_results(analysis_results)
-                        prompt_template = load_prompt(task_name)
-                        prompt = f"{prompt_template}\n\nPrevious analysis results to correlate:\n{previous_results}"
-                    except Exception as e:
-                        logger.error(f"Error formatting previous results: {str(e)}")
-                        raise
-                else:
-                    prompt_template = load_prompt(task_name)
-                    prompt = f"{prompt_template}\n\nData to analyze:\n{json.dumps(posts, indent=2)}"
+                if task_name == "proposed_SEO_content_strategies":
+                    variables.update(self._format_previous_results(analysis_results))
+
+                prompt = load_prompt(task_name, variables)
+                system_message = load_prompt(f"{task_name}_system")
 
                 logger.debug(f"Prompt length for {task_name}: {len(prompt)} characters")
 
-                body = {
-                    "anthropic_version": "bedrock-2023-05-31",
-                    "max_tokens": 4096,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "temperature": 0.3,
-                    "top_k": 250,
-                    "top_p": 0.999,
-                    "stop_sequences": [],
-                }
-
-                request_debug_info = {
-                    "prompt": prompt,
-                    "request_body": body,
-                }
-
-                logger.debug(f"Sending request to Bedrock for task {task_name}")
-                response = self.bedrock.invoke_model(
-                    modelId="us.anthropic.claude-3-5-haiku-20241022-v1:0",
-                    body=json.dumps(body),
-                    accept="application/json",
-                    contentType="application/json",
+                response = self.llm_caller.call_with_prefill(
+                    system_message=system_message,
+                    user_message=prompt,
+                    assistant_prefill=f"<{task_name}>",
+                    trace_name=f"{task_name}-attempt-{attempt+1}",
                 )
-                logger.debug(f"Received response from Bedrock for task {task_name}")
-
-                response_body = json.loads(response["body"].read().decode())
-                content = self._clean_response_content(response_body)
 
                 result = {
                     "task_name": task_name,
                     "task_number": task_number,
-                    "analysis": content,
-                    "posts_analyzed": len(posts),
-                    "request_body": request_debug_info,
+                    "analysis": response.content,
+                    "posts_analyzed": posts_analyzed,
                 }
                 logger.info(
                     f"Successfully completed task {task_name} on attempt {attempt + 1}"
@@ -226,19 +182,31 @@ class RedditAnalyzer:
     def analyze_posts(
         self,
         posts: List[Dict],
+        search_query: str,
         callback: Callable[[str, Dict[str, Any]], None],
         num_top_posts: int = 10,
+        min_comment_score: int = 1,
     ) -> None:
         sorted_posts = sorted(posts, key=lambda x: x["score"], reverse=True)
         top_posts = sorted_posts[:num_top_posts]
 
         logger.info(f"Starting analysis of {len(top_posts)} top posts")
+
+        scraped_info = prepare_posts_for_llm(
+            top_posts, min_comment_score=min_comment_score
+        )
+        logger.info(f"Scraped info length: {len(scraped_info)}")
         analysis_results = defaultdict(dict)
 
-        for task_number, task_name in RedditAnalyzer.TASKS:
+        for task_number, task_name in enumerate(RedditAnalyzer.TASKS):
             try:
                 result = self._analyze_task(
-                    top_posts, task_name, task_number, analysis_results
+                    scraped_info,
+                    len(top_posts),
+                    task_name,
+                    task_number + 1,
+                    analysis_results,
+                    search_query,
                 )
                 logger.info(f"Successfully completed {task_name}")
                 callback(task_name, result)
@@ -255,13 +223,17 @@ class RedditAnalyzer:
 
 def analyze_reddit_data(
     post_data: List[Dict],
+    search_query: str,
     callback: Callable[[str, Dict[str, Any]], None],
     region_name: str = "us-west-2",
     rate_limit_per_second: float = 0.2,
     num_top_posts: int = 10,
+    min_comment_score: int = 1,
 ) -> None:
     analyzer = RedditAnalyzer(
         region_name=region_name,
         rate_limit_per_second=rate_limit_per_second,
     )
-    analyzer.analyze_posts(post_data, callback, num_top_posts)
+    analyzer.analyze_posts(
+        post_data, search_query, callback, num_top_posts, min_comment_score
+    )
