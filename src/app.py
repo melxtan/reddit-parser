@@ -323,33 +323,28 @@ def run_analysis(post_data, task_order, filename):
         st.error(f"Analysis failed: {str(e)}")
         logging.exception("Analysis error:")
 
-
 def main():
-    task_order = [
-        "title_and_post_text_analysis",
-        "language_feature_extraction",
-        "sentiment_color_tracking",
-        "trend_analysis",
-        "correlation_analysis",
-    ]
+    task_order = RedditAnalyzer.TASKS
 
     initialize_app()
 
-    # Move password input to sidebar
+    # Sidebar authentication
     with st.sidebar:
         st.title("Authentication")
         password_input = st.text_input(
-            "Enter password to access the app:", type="password", key="password_input"
+            "Enter password:", type="password", key="password_input"
         )
         
         if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
             st.success("Authentication successful!")
             
-            # Move AWS credentials section to sidebar
+            # Only show AWS credentials section after successful authentication
             st.title("AWS Credentials")
             handle_aws_credentials()
+        else:
+            st.error("Please enter valid password to access the app")
+            return  # Exit early if authentication fails
 
-    # Main content area
     if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
         st.title("Reddit Post Scraper")
 
@@ -387,9 +382,47 @@ def main():
             if st.session_state.aws_creds:
                 st.subheader("Reddit Post Analysis")
 
-                if st.button("Analyze Reddit Posts"):
-                    run_analysis(st.session_state.post_data, task_order, filename)
-                elif st.session_state.analysis_results:
+                col1, col2 = st.columns(2)
+                with col1:
+                    min_comment_score = st.number_input(
+                        "Minimum comment score to include in analysis:",
+                        min_value=-100,
+                        value=1,
+                        help="Comments on Reddit start with a score of 1 (author's automatic upvote). "
+                        "A score of 0 means one downvote, negative scores mean more downvotes than upvotes. "
+                        "Only comments with scores >= this value will be analyzed.",
+                        key="min_comment_score",
+                    )
+                with col2:
+                    num_posts = len(st.session_state.post_data)
+                    num_top_posts = st.number_input(
+                        "Number of top posts to analyze:",
+                        min_value=1,
+                        max_value=num_posts,
+                        value=num_posts,
+                        help="Select how many of the top posts (sorted by score) to include in the analysis.",
+                        key="num_top_posts",
+                    )
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("Analyze Reddit Posts"):
+                        run_analysis(
+                            st.session_state.post_data,
+                            search_query,
+                            task_order,
+                            filename,
+                            min_comment_score=min_comment_score,
+                            num_top_posts=num_top_posts,
+                        )
+                with col2:
+                    if st.session_state.analysis_results and st.button("Run New Analysis"):
+                        st.session_state.analysis_results = {}
+                        st.session_state.task_containers = {}
+                        st.session_state.post_data = None
+                        st.rerun()
+
+                if st.session_state.analysis_results:
                     display_analysis_results(task_order, filename)
 
     else:
