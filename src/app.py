@@ -6,7 +6,7 @@ import re
 
 import pandas as pd
 import streamlit as st
-from reddit_analysis import analyze_reddit_data
+from reddit_analysis import RedditAnalyzer, analyze_reddit_data
 from scrape_reddit import ScrapeReddit
 from prompt_utils import load_prompt
 
