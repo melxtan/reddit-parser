@@ -13,6 +13,11 @@ from scrape_reddit import ScrapeReddit
 logger = logging.getLogger(__name__)
 
 def initialize_app() -> None:
+    # Setup langfuse
+    os.environ["LANGFUSE_PUBLIC_KEY"] = st.secrets["LANGFUSE_PUBLIC_KEY"]
+    os.environ["LANGFUSE_SECRET_KEY"] = st.secrets["LANGFUSE_SECRET_KEY"]
+    os.environ["LANGFUSE_HOST"] = "https://us.cloud.langfuse.com"  # 🇺🇸 US region
+
     logging.basicConfig(
         level=st.secrets.get("LOG_LEVEL", "INFO"),
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -28,35 +33,6 @@ def initialize_app() -> None:
         st.session_state.task_containers = {}
     if "debug_info" not in st.session_state:
         st.session_state.debug_info = {}
-
-
-def handle_aws_credentials():
-    if not st.session_state.aws_creds:
-        with st.sidebar.form("aws_creds_form"):
-            aws_access_key = st.text_input(
-                "Access Key ID", type="password", key="aws_access_key"
-            )
-            aws_secret_key = st.text_input(
-                "Secret Access Key", type="password", key="aws_secret_key"
-            )
-            aws_region = st.text_input("AWS Region", value="us-west-2", key="aws_region")
-
-            if st.form_submit_button("Save AWS Credentials"):
-                if aws_access_key and aws_secret_key:
-                    st.session_state.aws_creds = {
-                        "access_key": aws_access_key,
-                        "secret_key": aws_secret_key,
-                        "region": aws_region,
-                    }
-                    st.sidebar.success("AWS credentials saved!")
-                else:
-                    st.sidebar.error("Please enter both AWS Access Key ID and Secret Access Key")
-    else:
-        st.sidebar.success("AWS credentials are set")
-        if st.sidebar.button("Clear AWS Credentials", key="clear_creds"):
-            st.session_state.aws_creds = None
-            st.rerun()
-
 
 def render_search_interface():
     search_query = st.text_input("Enter a search query:", key="search_query")
@@ -119,9 +95,9 @@ def scrape_reddit_data(
         scraper = ScrapeReddit(
             use_api=use_api,
             log_level=logging.getLevelName(log_level),
-            client_id="uLbd7l7K0bLH2zsaTpIOTw",
-            client_secret="UOtiC3y7HAAiNyF-90fVQvDqgarVJg",
-            user_agent="melxtan",
+            client_id=st.secrets["REDDIT_CLIENT_ID"],
+            client_secret=st.secrets["REDDIT_CLIENT_SECRET"],
+            user_agent=st.secrets["REDDIT_USER_AGENT"],
         )
 
         st.info(f"Fetching posts. Max posts: {max_posts}")
@@ -145,18 +121,89 @@ def scrape_reddit_data(
 
 
 def display_data_summary(post_data, search_query, search_option, time_filter):
-    df_data = [{**post, "comments": json.dumps(post["comments"])} for post in post_data]
-    df = pd.DataFrame(df_data)
+    # Create full flattened structure with type indicator
+    flattened_data = []
+    for post in post_data:
+        flattened_data.append(
+            {
+                "type": "post",
+                "post_id": post["id"],
+                "title": post["title"],
+                "body": post["body"],
+                "author": post["author"],
+                "score": post["score"],
+                "created_at": post["created_at"],
+                "num_comments": post["num_comments"],
+                "subreddit": post["subreddit"],
+            }
+        )
 
+        for comment in post["comments"]:
+            flattened_data.append(
+                {
+                    "type": "comment",
+                    "post_id": post["id"],
+                    "title": "",
+                    "body": comment["body"],
+                    "author": comment["author"],
+                    "score": comment["score"],
+                    "created_at": comment["created_at"],
+                    "num_comments": None,
+                    "subreddit": post["subreddit"],
+                }
+            )
+
+    df = pd.DataFrame(flattened_data)
+
+    # Display summary statistics
     st.subheader("Summary")
-    st.write(f"Number of posts retrieved: {len(df)}")
-    st.write(f"Total comments: {df['num_comments'].sum()}")
-    st.write(f"Average score: {df['score'].mean():.2f}")
+    posts_count = len(df[df["type"] == "post"])
+    comments_count = len(df[df["type"] == "comment"])
+    st.write(f"Number of posts: {posts_count}")
+    st.write(f"Number of comments: {comments_count}")
+    st.write(f"Average post score: {df[df['type'] == 'post']['score'].mean():.2f}")
+    st.write(
+        f"Average comment score: {df[df['type'] == 'comment']['score'].mean():.2f}"
+    )
 
-    st.subheader("Data Preview")
-    st.dataframe(df)
+    # Create preview with limited comments
+    st.subheader("Preview (Posts with up to 2 comments)")
+    preview_rows = []
+    for post in post_data:
+        # Add post
+        preview_rows.append(
+            {
+                "type": "post",
+                "title": post["title"],
+                "body": post["body"][:100] + "..."
+                if len(post["body"]) > 100
+                else post["body"],
+                "author": post["author"],
+                "score": post["score"],
+                "created_at": post["created_at"],
+                "subreddit": post["subreddit"],
+            }
+        )
+        # Add up to 2 comments
+        for comment in post["comments"][:2]:
+            preview_rows.append(
+                {
+                    "type": "comment",
+                    "title": "",
+                    "body": comment["body"][:100] + "..."
+                    if len(comment["body"]) > 100
+                    else comment["body"],
+                    "author": comment["author"],
+                    "score": comment["score"],
+                    "created_at": comment["created_at"],
+                    "subreddit": post["subreddit"],
+                }
+            )
 
-    return df
+    preview_df = pd.DataFrame(preview_rows)
+    st.dataframe(preview_df, hide_index=True)
+
+    return df  # Return the complete flattened DataFrame
 
 def create_download_buttons(df, post_data, search_query, search_option, time_filter):
     col1, col2 = st.columns(2)
@@ -164,7 +211,7 @@ def create_download_buttons(df, post_data, search_query, search_option, time_fil
     filename = f"reddit_{safe_query}_{search_option}_{time_filter}"
 
     with col1:
-        json_str = json.dumps(post_data, indent=2)
+        json_str = json.dumps(post_data, indent=2, ensure_ascii=False)
         st.download_button(
             label="Download JSON",
             data=json_str,
@@ -175,11 +222,19 @@ def create_download_buttons(df, post_data, search_query, search_option, time_fil
 
     with col2:
         csv_buffer = io.StringIO()
-        df.to_csv(csv_buffer, index=False)
+        df.to_csv(
+            csv_buffer,
+            index=False,
+            encoding="utf-8-sig",
+            sep=",",
+            quoting=csv.QUOTE_ALL,
+            escapechar="\\",
+            doublequote=True,
+        )
         csv_str = csv_buffer.getvalue()
         st.download_button(
             label="Download CSV",
-            data=csv_str,
+            data=csv_str.encode("utf-8-sig"),
             file_name=f"{filename}.csv",
             mime="text/csv",
             key="post_data_csv",
@@ -187,26 +242,47 @@ def create_download_buttons(df, post_data, search_query, search_option, time_fil
 
     return filename
 
+def handle_aws_credentials():
+    if not st.session_state.aws_creds:
+        with st.form("aws_creds_form"):
+            aws_access_key = st.text_input(
+                "AWS Access Key ID", type="password", key="aws_access_key"
+            )
+            aws_secret_key = st.text_input(
+                "AWS Secret Access Key", type="password", key="aws_secret_key"
+            )
+            aws_region = st.text_input("AWS Region", value="us-west-2", key="aws_region")
+
+            if st.form_submit_button("Save AWS Credentials"):
+                if aws_access_key and aws_secret_key:
+                    st.session_state.aws_creds = {
+                        "access_key": aws_access_key,
+                        "secret_key": aws_secret_key,
+                        "region": aws_region,
+                    }
+                    st.success("AWS credentials saved!")
+                else:
+                    st.error("Please enter both AWS Access Key ID and Secret Access Key")
+    else:
+        st.success("AWS credentials are set")
+        if st.button("Clear AWS Credentials", key="clear_creds"):
+            st.session_state.aws_creds = None
+            st.rerun()
+
 def create_task_containers(task_order):
-    st.session_state.task_containers = {}
     for task_name in task_order:
-        try:
-            prompt_content = load_prompt(task_name)
-            title = re.search(r"<title>(.*?)</title>", prompt_content)
-            task_title = title.group(1) if title else task_name.replace("_", " ").title()
-        except Exception as e:
-            logger.warning(f"Could not load prompt title for {task_name}: {e}")
-            task_title = task_name.replace("_", " ").title()
+        task_title = task_name.replace("_", " ").title()
 
         st.subheader(task_title)
         status_container = st.empty()
         status_container.info(f"Running {task_title}...")
         result_container = st.empty()
-        st.divider()
-        
+        debug_container = st.expander("Show Request Details")
+        st.write("---")
         st.session_state.task_containers[task_name] = {
             "status": status_container,
             "result": result_container,
+            "debug": debug_container,
         }
 
 def clean_xml_result(result: dict) -> str:
@@ -268,32 +344,6 @@ def update_task_status(task_name: str, result: dict, task_order: list, filename:
         if task_name == task_order[-1]:
             st.rerun()
 
-def display_analysis_results(task_order, filename):
-    for task_name in task_order:
-        if task_name in st.session_state.analysis_results:
-            result = st.session_state.analysis_results[task_name]
-            if "error" not in result:
-                st.subheader(task_name.replace("_", " ").title())
-                st.write(result["analysis"])
-                st.divider()
-
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        st.download_button(
-            label="Download Complete Analysis (JSON)",
-            data=json.dumps(st.session_state.analysis_results, indent=2),
-            file_name=f"{filename}_analysis.json",
-            mime="application/json",
-            key="analysis_json_final",
-        )
-    with col2:
-        if st.button("Run New Analysis"):
-            # Only reset non-widget session state
-            st.session_state.analysis_results = {}
-            st.session_state.task_containers = {}
-            st.session_state.post_data = None
-            st.rerun()
-
 def run_analysis(
     post_data, search_query, task_order, filename, min_comment_score, num_top_posts
 ):
@@ -336,24 +386,23 @@ def display_analysis_results(task_order, filename):
         if task_name in st.session_state.analysis_results:
             result = st.session_state.analysis_results[task_name]
             if "error" not in result:
-                task_title = task_name.replace("_", " ").title()
-                
-                # Create an expander for each analysis result
-                with st.expander(f"{task_title}", expanded=False):
-                    st.text_area(
-                        label="Analysis Result",
-                        value=clean_xml_result(result),
-                        height=300,
-                        label_visibility="collapsed",
-                        key=f"text_area_{task_name}",
-                    )
+                st.subheader(task_name.replace("_", " ").title())
 
-                    if "request_body" in result:
-                        with st.expander("Show Request Details"):
-                            st.subheader("Request Details")
-                            st.json(result["request_body"])
+                st.text_area(
+                    label="Analysis Result",
+                    value=clean_xml_result(result),
+                    height=300,
+                    label_visibility="collapsed",
+                    key=f"text_area_{task_name}",
+                )
 
-    # Download buttons section
+                if "request_body" in result:
+                    with st.expander("Show Request Details"):
+                        st.subheader("Request Details")
+                        st.json(result["request_body"])
+
+                st.write("---")
+
     def create_word_doc():
         doc = Document()
         for task_name in task_order:
@@ -392,21 +441,19 @@ def main():
     task_order = RedditAnalyzer.TASKS
     initialize_app()
 
-    # Move password input and AWS credentials to sidebar
     with st.sidebar:
         st.title("Authentication")
         password_input = st.text_input(
             "Enter password to access the app:", type="password", key="password_input"
         )
         
-        if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
+        if password_input == st.secrets["APP_PASSWORD"]:
             st.success("Authentication successful!")
             
-            # AWS credentials section in sidebar
             st.title("AWS Credentials")
             handle_aws_credentials()
 
-    if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
+    if password_input == st.secrets["APP_PASSWORD"]:
         st.title("Reddit Post Scraper")
         search_query, search_option, time_filter, max_posts, use_api, log_level = (
             render_search_interface()
