@@ -268,60 +268,100 @@ def display_analysis_results(task_order, filename):
             st.session_state.post_data = None
             st.rerun()
 
-def display_analysis_results(task_order, filename):
-    for task_name in task_order:
-        if task_name in st.session_state.analysis_results:
-            result = st.session_state.analysis_results[task_name]
-            if "error" not in result:
-                st.subheader(task_name.replace("_", " ").title())
-                st.write(result["analysis"])
-                st.divider()
-
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        st.download_button(
-            label="Download Complete Analysis (JSON)",
-            data=json.dumps(st.session_state.analysis_results, indent=2),
-            file_name=f"{filename}_analysis.json",
-            mime="application/json",
-            key="analysis_json_final",
-        )
-    with col2:
-        if st.button("Run New Analysis"):
-            # Reset all relevant session state variables
-            st.session_state.analysis_results = {}
-            st.session_state.task_containers = {}
-            st.session_state.post_data = None
-            st.rerun()
-
-
-def run_analysis(post_data, task_order, filename):
+def run_analysis(
+    post_data, search_query, task_order, filename, min_comment_score, num_top_posts
+):
     try:
         os.environ["AWS_ACCESS_KEY_ID"] = st.session_state.aws_creds["access_key"]
         os.environ["AWS_SECRET_ACCESS_KEY"] = st.session_state.aws_creds["secret_key"]
 
-        num_top_posts = 10
         st.info(
-            f"Due to rate limit, we are currently only analyzing up to top {num_top_posts} posts with highest scores."
+            f"Due to rate limit, we are currently only analyzing top {num_top_posts} posts with highest scores. "
+            f"Only comments with a minimum score of {min_comment_score} will be included in the analysis."
         )
 
         create_task_containers(task_order)
         st.session_state.analysis_results = {}
+        st.session_state.debug_info = {}
 
         def callback(task_name: str, result: dict) -> None:
             update_task_status(task_name, result, task_order, filename)
 
         analyze_reddit_data(
             post_data=post_data,
+            search_query=search_query,
             callback=callback,
             region_name=st.session_state.aws_creds["region"],
             rate_limit_per_second=0.5,
             num_top_posts=num_top_posts,
+            min_comment_score=min_comment_score,
         )
 
     except Exception as e:
         st.error(f"Analysis failed: {str(e)}")
         logging.exception("Analysis error:")
+
+    except Exception as e:
+        st.error(f"Analysis failed: {str(e)}")
+        logging.exception("Analysis error:")
+
+def display_analysis_results(task_order, filename):
+    for task_name in task_order:
+        if task_name in st.session_state.analysis_results:
+            result = st.session_state.analysis_results[task_name]
+            if "error" not in result:
+                st.subheader(task_name.replace("_", " ").title())
+
+                st.text_area(
+                    label="Analysis Result",
+                    value=clean_xml_result(result),
+                    height=300,
+                    label_visibility="collapsed",
+                    key=f"text_area_{task_name}",
+                )
+
+                if "request_body" in result:
+                    with st.expander("Show Request Details"):
+                        st.subheader("Request Details")
+                        st.json(result["request_body"])
+
+                st.write("---")
+
+    def create_word_doc():
+        doc = Document()
+        for task_name in task_order:
+            if task_name in st.session_state.analysis_results:
+                result = st.session_state.analysis_results[task_name]
+                if "error" not in result:
+                    doc.add_heading(task_name.replace("_", " ").title(), level=1)
+                    doc.add_paragraph(clean_xml_result(result))
+                    doc.add_paragraph()
+
+        doc_buffer = io.BytesIO()
+        doc.save(doc_buffer)
+        doc_buffer.seek(0)
+        return doc_buffer
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.download_button(
+            label="Download Complete Analysis (JSON)",
+            data=json.dumps(
+                st.session_state.analysis_results, indent=2, ensure_ascii=False
+            ),
+            file_name=f"{filename}_analysis.json",
+            mime="application/json",
+            key="analysis_json_final",
+        )
+
+    with col2:
+        st.download_button(
+            label="Download Analysis (Word)",
+            data=create_word_doc(),
+            file_name=f"{filename}_analysis.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            key="analysis_word_final",
+        )
 
 def main():
     task_order = RedditAnalyzer.TASKS
