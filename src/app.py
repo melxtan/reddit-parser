@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 
 def initialize_app() -> None:
     # Setup langfuse
-    os.environ["LANGFUSE_PUBLIC_KEY"] = st.secrets["LANGFUSE_PUBLIC_KEY"]
-    os.environ["LANGFUSE_SECRET_KEY"] = st.secrets["LANGFUSE_SECRET_KEY"]
+    os.environ["LANGFUSE_PUBLIC_KEY"] = "pk-lf-457d1b99-6acb-490c-a50c-71916af2b291"
+    os.environ["LANGFUSE_SECRET_KEY"] = "sk-lf-33ed664d-236c-4c0b-b6d3-7b066a012c0a"
     os.environ["LANGFUSE_HOST"] = "https://us.cloud.langfuse.com"  # 🇺🇸 US region
 
     logging.basicConfig(
@@ -95,9 +95,9 @@ def scrape_reddit_data(
         scraper = ScrapeReddit(
             use_api=use_api,
             log_level=logging.getLevelName(log_level),
-            client_id=st.secrets["REDDIT_CLIENT_ID"],
-            client_secret=st.secrets["REDDIT_CLIENT_SECRET"],
-            user_agent=st.secrets["REDDIT_USER_AGENT"],
+            client_id="uLbd7l7K0bLH2zsaTpIOTw",
+            client_secret="UOtiC3y7HAAiNyF-90fVQvDqgarVJg",
+            user_agent="melxtan",
         )
 
         st.info(f"Fetching posts. Max posts: {max_posts}")
@@ -447,13 +447,13 @@ def main():
             "Enter password to access the app:", type="password", key="password_input"
         )
         
-        if password_input == st.secrets["APP_PASSWORD"]:
+        if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
             st.success("Authentication successful!")
             
             st.title("AWS Credentials")
             handle_aws_credentials()
 
-    if password_input == st.secrets["APP_PASSWORD"]:
+    if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
         st.title("Reddit Post Scraper")
         search_query, search_option, time_filter, max_posts, use_api, log_level = (
             render_search_interface()
