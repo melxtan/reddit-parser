@@ -1,7 +1,7 @@
+
 #!/usr/bin/env python
 # coding: utf-8
 
-import json
 import logging
 import random
 import re
@@ -51,7 +51,9 @@ class ScrapeReddit:
         self.user_agent = user_agent
 
         if not all([self.client_id, self.client_secret, self.user_agent]):
-            raise ValueError("Missing Reddit API credentials. Please provide them as parameters or set them as environment variables.")
+            raise ValueError(
+                "Missing Reddit API credentials. Please provide them as parameters or set them as environment variables."
+            )
 
         self.reddit = CustomReddit(
             client_id=self.client_id,
@@ -81,38 +83,68 @@ class ScrapeReddit:
             except WebDriverException:
                 continue
 
-        raise Exception("No supported WebDriver found. Please install Chrome, Firefox, or Safari.")
+        raise Exception(
+            "No supported WebDriver found. Please install Chrome, Firefox, or Safari."
+        )
 
     def lazy_scroll(self, max_scrolls=10):
         for _ in range(max_scrolls):
-            self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            self.driver.execute_script(
+                "window.scrollTo(0, document.body.scrollHeight);"
+            )
             time.sleep(2)
         return self.driver.page_source
 
-    def get_posts(self, search_query, time_filter="all", search_option="relevance", limit=None) -> List[str]:
+    def get_posts(
+        self, search_query, time_filter="all", search_option="relevance", limit=None
+    ) -> List[str]:
         if self.use_api:
             return self._get_posts_api(search_query, time_filter, search_option, limit)
         else:
-            return self._get_posts_webdriver(search_query, time_filter, search_option, limit)
+            return self._get_posts_webdriver(
+                search_query, time_filter, search_option, limit
+            )
 
-    def _get_posts_api(self, search_query, time_filter, search_option, limit) -> List[str]:
-        self.logger.info(f"Searching for '{search_query}' with time filter: {time_filter} and search option: {search_option}")
+    def _get_posts_api(
+        self, search_query, time_filter, search_option, limit
+    ) -> List[str]:
+        self.logger.info(
+            f"Searching for '{search_query}' with time filter: {time_filter} and search option: {search_option}"
+        )
         urls = []
-        sort_mapping = {"relevance": "relevance", "hot": "hot", "top": "top", "new": "new", "comments": "comments"}
+        sort_mapping = {
+            "relevance": "relevance",
+            "hot": "hot",
+            "top": "top",
+            "new": "new",
+            "comments": "comments",
+        }
         sort = sort_mapping.get(search_option, "relevance")
 
-        for submission in self.reddit.search(query=search_query, sort=sort, time_filter=time_filter, limit=limit):
+        for submission in self.reddit.search(
+            query=search_query, sort=sort, time_filter=time_filter, limit=limit
+        ):
             urls.append(f"https://www.reddit.com{submission.permalink}")
 
         self.logger.info(f"Collected {len(urls)} URLs")
         self.logger.debug(f"URLs: {urls}")
         return urls
 
-    def _get_posts_webdriver(self, search_query, time_filter, search_option, limit) -> List[str]:
-        self.logger.info(f"Searching for '{search_query}' with time filter: {time_filter} and search option: {search_option}")
+    def _get_posts_webdriver(
+        self, search_query, time_filter, search_option, limit
+    ) -> List[str]:
+        self.logger.info(
+            f"Searching for '{search_query}' with time filter: {time_filter} and search option: {search_option}"
+        )
 
         # Map search_option to Reddit's URL parameter
-        sort_mapping = {"relevance": "relevance", "hot": "hot", "top": "top", "new": "new", "comments": "comments"}
+        sort_mapping = {
+            "relevance": "relevance",
+            "hot": "hot",
+            "top": "top",
+            "new": "new",
+            "comments": "comments",
+        }
         sort = sort_mapping.get(search_option, "relevance")
 
         time_param = f"&t={time_filter}" if time_filter != "all" else ""
@@ -120,7 +152,11 @@ class ScrapeReddit:
         self.driver.get(search_url)
 
         try:
-            WebDriverWait(self.driver, 30).until(EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-testid='post-container']")))
+            WebDriverWait(self.driver, 30).until(
+                EC.presence_of_element_located(
+                    (By.CSS_SELECTOR, "div[data-testid='post-container']")
+                )
+            )
         except TimeoutException:
             self.logger.warning("Timeout waiting for posts to load. Proceeding anyway.")
 
@@ -141,6 +177,16 @@ class ScrapeReddit:
         self.logger.info(f"Collected {len(urls)} unique URLs")
         return urls[:limit] if limit else urls
 
+    def _clean_text(self, text: str) -> str:
+        """Remove invisible characters and their HTML entity equivalents from text."""
+        # Remove HTML entities for zero-width spaces and other invisible characters
+        html_pattern = r"&#x200B;|&#x200C;|&#x200D;|&#xFEFF;"
+        text = re.sub(html_pattern, "", text)
+
+        # Remove Unicode invisible characters
+        invisible_chars_pattern = r"[\u200B-\u200D\uFEFF]"
+        return re.sub(invisible_chars_pattern, "", text)
+
     def get_reddit_post_info(self, urls):
         post_data = []
         self.logger.info(f"Starting to process posts. Total URLs: {len(urls)}")
@@ -152,14 +198,15 @@ class ScrapeReddit:
                 submission = self.reddit.submission(url=url)
                 post_info = {
                     "id": submission.id,
-                    "title": submission.title,
-                    "post_text": submission.selftext,
+                    "title": self._clean_text(submission.title),
+                    "body": self._clean_text(submission.selftext),
                     "num_comments": submission.num_comments,
                     "score": submission.score,
                     "author": str(submission.author),
                     "subreddit": submission.subreddit.display_name,
-                    "created_utc": submission.created_utc,
-                    "created_at": datetime.utcfromtimestamp(submission.created_utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
+                    "created_at": datetime.utcfromtimestamp(
+                        submission.created_utc
+                    ).strftime("%Y-%m-%d %H:%M:%S UTC"),
                     "comments": [],
                 }
 
@@ -167,16 +214,14 @@ class ScrapeReddit:
                 comments: List[Comment] = submission.comments.list()  # type: ignore
                 for comment in comments:
                     comment_info = {
-                        "body": comment.body,
+                        "body": self._clean_text(comment.body),
                         "author": str(comment.author),
-                        "created_utc": comment.created_utc,
-                        "created_at": datetime.utcfromtimestamp(comment.created_utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
+                        "created_at": datetime.utcfromtimestamp(
+                            comment.created_utc
+                        ).strftime("%Y-%m-%d %H:%M:%S UTC"),
                         "score": comment.score,
                     }
                     post_info["comments"].append(comment_info)
-
-                # Convert comments to JSON string
-                post_info["comments"] = json.dumps(post_info["comments"])
 
                 post_data.append(post_info)
                 self.logger.info(f"Successfully processed post {count + 1}")
