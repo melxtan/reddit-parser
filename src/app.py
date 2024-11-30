@@ -158,7 +158,6 @@ def display_data_summary(post_data, search_query, search_option, time_filter):
 
     return df
 
-
 def create_download_buttons(df, post_data, search_query, search_option, time_filter):
     col1, col2 = st.columns(2)
     safe_query = search_query.replace(" ", "_").lower()[:30]
@@ -210,38 +209,64 @@ def create_task_containers(task_order):
             "result": result_container,
         }
 
+def clean_xml_result(result: dict) -> str:
+    """Clean and format the analysis result for display.
+    Removes root level XML-like tags that might confuse non-technical users.
+    """
+    if not isinstance(result, dict) or "analysis" not in result:
+        return "Invalid result format"
+
+    analysis = result["analysis"]
+    if not isinstance(analysis, str):
+        analysis = str(analysis)
+
+    # Remove any root-level XML-like tags (e.g., <post_types_analysis>, <result>, etc.)
+    cleaned = analysis.strip()
+    # Match any XML-like tag at the start and corresponding end
+    if (
+        cleaned.startswith("<")
+        and cleaned.endswith(">")
+        and ">" in cleaned[1:]
+        and "</" in cleaned
+    ):
+        # Find the first closing bracket
+        first_close = cleaned.find(">")
+        # Find the last opening bracket
+        last_open = cleaned.rfind("</")
+        if first_close != -1 and last_open != -1:
+            cleaned = cleaned[first_close + 1 : last_open].strip()
+
+    return cleaned
 
 def update_task_status(task_name: str, result: dict, task_order: list, filename: str):
     containers = st.session_state.task_containers[task_name]
-    task_display_name = task_name.replace("_", " ").title()
 
     if "error" in result:
         containers["status"].error(
-            f"Error in {task_display_name}: {result['error']}"
+            f"Error in {task_name.replace('_', ' ').title()}: {result['error']}"
         )
     else:
-        containers["status"].success(f"{task_display_name} completed")
-        containers["result"].write(result["analysis"])
+        containers["status"].success(f"{task_name.replace('_', ' ').title()} completed!")
+        # Just store the result and trigger rerun
         st.session_state.analysis_results[task_name] = result
+        cleaned_analysis = clean_xml_result(result)
+        containers["result"].text_area(
+            label="Analysis Result",
+            value=cleaned_analysis,
+            height=300,
+            disabled=True,
+            label_visibility="collapsed",
+            key=f"text_area_{task_name}",
+        )
 
-        if len(st.session_state.analysis_results) == len(task_order):
-            st.success("Analysis completed successfully")
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                st.download_button(
-                    label="Download Complete Analysis (JSON)",
-                    data=json.dumps(st.session_state.analysis_results, indent=2),
-                    file_name=f"{filename}_analysis.json",
-                    mime="application/json",
-                    key="analysis_json_final",
-                )
-            with col2:
-                if st.button("Run New Analysis"):
-                    st.session_state.analysis_results = {}
-                    st.session_state.task_containers = {}
-                    st.session_state.post_data = None
-                    st.rerun()
+        if "request_body" in result:
+            with containers["debug"]:
+                st.subheader("Request Details")
+                st.json(result["request_body"])
 
+        # Only rerun when the last task completes
+        if task_name == task_order[-1]:
+            st.rerun()
 
 def display_analysis_results(task_order, filename):
     for task_name in task_order:
@@ -311,23 +336,24 @@ def display_analysis_results(task_order, filename):
         if task_name in st.session_state.analysis_results:
             result = st.session_state.analysis_results[task_name]
             if "error" not in result:
-                st.subheader(task_name.replace("_", " ").title())
+                task_title = task_name.replace("_", " ").title()
+                
+                # Create an expander for each analysis result
+                with st.expander(f"{task_title}", expanded=False):
+                    st.text_area(
+                        label="Analysis Result",
+                        value=clean_xml_result(result),
+                        height=300,
+                        label_visibility="collapsed",
+                        key=f"text_area_{task_name}",
+                    )
 
-                st.text_area(
-                    label="Analysis Result",
-                    value=clean_xml_result(result),
-                    height=300,
-                    label_visibility="collapsed",
-                    key=f"text_area_{task_name}",
-                )
+                    if "request_body" in result:
+                        with st.expander("Show Request Details"):
+                            st.subheader("Request Details")
+                            st.json(result["request_body"])
 
-                if "request_body" in result:
-                    with st.expander("Show Request Details"):
-                        st.subheader("Request Details")
-                        st.json(result["request_body"])
-
-                st.write("---")
-
+    # Download buttons section
     def create_word_doc():
         doc = Document()
         for task_name in task_order:
@@ -337,7 +363,7 @@ def display_analysis_results(task_order, filename):
                     doc.add_heading(task_name.replace("_", " ").title(), level=1)
                     doc.add_paragraph(clean_xml_result(result))
                     doc.add_paragraph()
-
+        
         doc_buffer = io.BytesIO()
         doc.save(doc_buffer)
         doc_buffer.seek(0)
@@ -347,9 +373,7 @@ def display_analysis_results(task_order, filename):
     with col1:
         st.download_button(
             label="Download Complete Analysis (JSON)",
-            data=json.dumps(
-                st.session_state.analysis_results, indent=2, ensure_ascii=False
-            ),
+            data=json.dumps(st.session_state.analysis_results, indent=2, ensure_ascii=False),
             file_name=f"{filename}_analysis.json",
             mime="application/json",
             key="analysis_json_final",
