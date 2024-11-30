@@ -1,0 +1,221 @@
+<scraped_info>{{scraped_info}}</scraped_info>
+
+<search_query>{{search_query}}</search_query>
+
+<trend_types_definitions>
+1. Topic Evolution Analysis: Analysis granularity varies based on the time filter of scraped data:
+- Past year data: Monthly trend analysis
+- Past month data: Weekly trend analysis 
+- Past week data: Daily trend analysis
+- Past day/hour data: Hourly trend analysis
+2. User Behavior Pattern Analysis: Examining changes in user needs expression, discussion style, community responses, and preference shifts to understand consumer behavior evolution.
+3. Market Signal Analysis: Identifying trends in product/feature preferences, price sensitivity, brand mentions, and emerging pain points to guide business decisions.
+</trend_types_definitions>
+
+<task>
+Analyze trend patterns in the provided Reddit posts and comments from <scraped_info> tags based on the search query from <search_query> tags. Output the analysis results in <trend_analysis> tags.
+</task>
+
+<instrcutions>
+1. Thoroughly understand and analyze scraped Reddit posts and comments from <scraped_info> tags based on search query from <search_query> tags.
+2. Identify and analyze trend patterns according to the definitions from <trend_types_definitions> tags.
+3. Prioritize high-engagement discussions and recurring patterns.
+4. Output the analysis results in <trend_analysis> tags.
+</instrcutions>
+
+<requirements>
+1. Only analyze trends with significant engagement metrics.
+2. All observations must be supported by specific data points in the form of exact quotes from the Reddit posts and comments.
+3. Pattern identification must be based on multiple data points over time.
+4. Only include trends showing clear evolution or change.
+5. Each observed pattern must include engagement metrics (upvotes/comment counts).
+6. Analysis granularity must match the time filter of scraped data:
+   - Past year: Compare months
+   - Past month: Compare weeks
+   - Past week: Compare days 
+   - Today/Past hour: Compare hours
+7. If data volume in shorter time periods (Today/Past hour) is insufficient for trend analysis, output should state "Insufficient data for trend analysis in this time range."
+8. The ONLY valid output format starts with "<trend_analysis>" and ends with "</trend_analysis>". Any text outside these tags is considered invalid.
+</requirements>
+
+<output_format>
+The output must strictly follow this structure with NO deviations:
+1. Topic Evolution section is mandatory and must follow this format:
+Topic Evolution Analysis:
+
+- Time range: [time filter selected]
+- Analysis granularity: [monthly/weekly/daily/hourly] based on time filter
+- Data volume: [total posts] posts, [total comments] comments
+
+- Emerging topics:
+  * "[topic]" (Growth pattern: [time point 1] [X] mentions → [time point 2] [Y] mentions, [Z] total upvotes)
+  * "[topic]" (Growth pattern: [time point 1] [X] mentions → [time point 2] [Y] mentions, [Z] total upvotes)
+  * "[topic]" (Growth pattern: [time point 1] [X] mentions → [time point 2] [Y] mentions, [Z] total upvotes)
+
+- Declining topics:
+  * "[topic]" (Decline pattern: [time point 1] [X] mentions → [time point 2] [Y] mentions, [Z] total upvotes)
+  * "[topic]" (Decline pattern: [time point 1] [X] mentions → [time point 2] [Y] mentions, [Z] total upvotes)
+  * "[topic]" (Decline pattern: [time point 1] [X] mentions → [time point 2] [Y] mentions, [Z] total upvotes)
+
+2. User Behavior section is mandatory and must follow this format:
+User Behavior Pattern Analysis:
+
+- Changing needs:
+  * Shift: [behavior change name]
+    Before: "[exact quote from earlier posts]" ([date], [upvotes] upvotes) 
+    After: "[exact quote from recent posts]" ([date], [upvotes] upvotes)
+    Supporting data: [X] total comments showing this transition
+  * Shift: [behavior change name]
+    Before: "[exact quote from earlier posts]" ([date], [upvotes] upvotes)
+    After: "[exact quote from recent posts]" ([date], [upvotes] upvotes)
+    Supporting data: [X] total comments showing this transition
+  * Shift: [behavior change name]
+    Before: "[exact quote from earlier posts]" ([date], [upvotes] upvotes)
+    After: "[exact quote from recent posts]" ([date], [upvotes] upvotes)
+    Supporting data: [X] total comments showing this transition
+
+- Response patterns:
+  * Trend: [trend name]
+    Evidence: "[exact quote]" ([upvotes] upvotes)
+    Evidence: "[exact quote]" ([upvotes] upvotes) 
+    Evidence: "[exact quote]" ([upvotes] upvotes) 
+    Total engagement: [X] comments, [Y] total upvotes
+
+3. Market Signal section is mandatory and must follow this format:
+Market Signal Analysis:
+
+- Product preferences:
+  * Feature: [feature name]
+    Top mentions:
+    - "[exact quote]" ([upvotes] upvotes)
+    - "[exact quote]" ([upvotes] upvotes)
+    - "[exact quote]" ([upvotes] upvotes)
+    Total presence: [X]% of discussions, [Y] total upvotes
+
+- Price sensitivity:
+  * Trend: [price trend name]
+    Evidence:
+    - "[exact quote]" ([upvotes] upvotes)
+    - "[exact quote]" ([upvotes] upvotes)
+    - "[exact quote]" ([upvotes] upvotes)
+    Total mentions: [X] comments, [Y] total upvotes
+4. No other sections or analysis should be added.
+5. The output MUST END after the last section.
+</output_format>
+
+<output_examples>
+Examples of correct implementation:
+<example_past_year>
+Topic Evolution Analysis:
+
+- Time range: Past year
+- Analysis granularity: Monthly
+- Data volume: 12,500 posts, 45,000 comments
+
+- Emerging topics:
+  * "sustainability features" (Growth pattern: Jan 2023 50 mentions → Dec 2023 245 mentions, 12,500 total upvotes)
+  * "smart integration" (Growth pattern: Mar 2023 30 mentions → Dec 2023 180 mentions, 8,900 total upvotes)
+  * "customization options" (Growth pattern: Jun 2023 40 mentions → Dec 2023 156 mentions, 7,600 total upvotes)
+
+- Declining topics:
+  * "basic functionality" (Decline pattern: Jan 2023 200 mentions → Dec 2023 45 mentions, 5,500 total upvotes)
+  * "battery life concerns" (Decline pattern: Jan 2023 180 mentions → Dec 2023 40 mentions, 4,800 total upvotes)
+  * "size complaints" (Decline pattern: Jan 2023 150 mentions → Dec 2023 35 mentions, 4,200 total upvotes)
+
+User Behavior Pattern Analysis:
+
+- Changing needs:
+  * Shift: Premium feature prioritization
+    Before: "Looking for the cheapest option that just works" (Jan 15 2023, 650 upvotes)
+    After: "Happy to invest more for advanced features and better quality" (Dec 10 2023, 820 upvotes)
+    Supporting data: 156 comments showing this transition
+
+  * Shift: Environmental consciousness
+    Before: "Don't care about materials as long as it works" (Feb 2023, 580 upvotes)
+    After: "Only considering products with recycled materials and eco-friendly packaging" (Nov 2023, 890 upvotes)
+    Supporting data: 203 comments showing this transition
+
+- Response patterns:
+  * Trend: Sustainability focus
+    Evidence: "The recycled materials make this a no-brainer choice" (15,000 upvotes)
+    Evidence: "Finally a company taking environmental impact seriously" (13,500 upvotes)
+    Evidence: "Worth paying extra for sustainable options" (12,800 upvotes)
+    Total engagement: 1,200 comments, 41,300 total upvotes
+
+Market Signal Analysis:
+
+- Product preferences:
+  * Feature: AI-powered capabilities
+    Top mentions:
+    - "The AI assistant completely changed how I use the product" (9,800 upvotes)
+    - "Smart home integration works flawlessly" (8,500 upvotes)
+    - "AI features justify the premium price" (7,900 upvotes)
+    Total presence: 35% of discussions, 26,200 total upvotes
+
+- Price sensitivity:
+  * Trend: Premium pricing acceptance
+    Evidence:
+    - "Quality and features worth the higher price point" (9,500 upvotes)
+    - "Would rather pay more for something that lasts" (8,000 upvotes)
+    - "Premium features justify the cost increase" (7,500 upvotes)
+    Total mentions: 780 comments, 25,000 total upvotes
+</example_past_year>
+<example_past_month>
+Topic Evolution Analysis:
+
+- Time range: Past month
+- Analysis granularity: Weekly
+- Data volume: 2,800 posts, 12,000 comments
+
+- Emerging topics:
+  * "wireless charging" (Growth pattern: Week 1 120 mentions → Week 4 480 mentions, 24500 total upvotes)
+  * "water resistance" (Growth pattern: Week 1 95 mentions → Week 4 385 mentions, 19200 total upvotes)
+  * "gesture controls" (Growth pattern: Week 1 85 mentions → Week 4 340 mentions, 17000 total upvotes)
+
+- Declining topics:
+  * "wired charging" (Decline pattern: Week 1 320 mentions → Week 4 160 mentions, 8000 total upvotes)
+  * "physical buttons" (Decline pattern: Week 1 280 mentions → Week 4 140 mentions, 7000 total upvotes)
+  * "basic protection" (Decline pattern: Week 1 250 mentions → Week 4 125 mentions, 6250 total upvotes)
+
+User Behavior Pattern Analysis:
+
+- Changing needs:
+  * Shift: From wired to wireless charging preference
+    Before: "wired charging is more reliable" (Week 1, 850 upvotes)
+    After: "wireless charging is so convenient" (Week 4, 1200 upvotes)
+    Supporting data: 245 comments showing this transition
+  * Shift: From basic to advanced protection
+    Before: "basic case is enough" (Week 1, 720 upvotes)
+    After: "need full waterproof protection" (Week 4, 980 upvotes)
+    Supporting data: 198 comments showing this transition
+  * Shift: From button controls to gesture controls
+    Before: "physical buttons are more precise" (Week 1, 680 upvotes)
+    After: "gesture controls are the future" (Week 4, 890 upvotes)
+    Supporting data: 175 comments showing this transition
+
+- Response patterns:
+  * Trend: Growing demand for durability
+    Evidence: "waterproof rating is essential now" (22000 upvotes)
+    Evidence: "won't buy anything less than IP68" (19500 upvotes)
+    Evidence: "durability is my top priority" (18000 upvotes)
+    Total engagement: 1800 comments, 59500 total upvotes
+
+Market Signal Analysis:
+
+- Product preferences:
+  * Feature: Advanced protection
+    Top mentions:
+    - "full waterproof protection is non-negotiable" (15000 upvotes)
+    - "needs military-grade drop protection" (13500 upvotes)
+    - "dust resistance is crucial" (12000 upvotes)
+    Total presence: 48% of discussions, 40500 total upvotes
+
+- Price sensitivity:
+  * Trend: Premium protection worth the cost
+    Evidence:
+    - "happy to pay more for better protection" (12500 upvotes)
+    - "quality protection is worth the investment" (11000 upvotes)
+    - "rather spend more now than replace later" (10500 upvotes)
+    Total mentions: 850 comments, 34000 total upvotes
+</example_past_month>
+</output_examples>

@@ -1,0 +1,119 @@
+<scraped_info>{{scraped_info}}</scraped_info>
+
+<search_query>{{search_query}}</search_query>
+
+<keyword_types_definitions>
+1. Product needs description phrases: Complete phrases quoted directly from users expressing their requirements.(e.g., direct quote: "need something that won't fall apart after a month")
+2. Descriptive adjectives: Exact adjectives quoted from original text that describe product characteristics or qualities.(e.g., direct quote: "incredibly durable")
+3. Professional terminology: Exact technical terms as used in the original text.(e.g., direct quote: "arch support")
+</keyword_types_definitions>
+
+<task>
+Analyze and extract high-frequency keyword patterns from the provided Reddit posts and comments from <scraped_info> tags based on the search query from <search_query> tags. Only extract exact quotes from original text, with priority given to comments with highest upvotes. Output the analysis results in <keyword_pattern_analysis> tags.
+</task>
+
+<instrcutions>
+1. Thoroughly understand and analyze scraped Reddit posts and comments from <scraped_info> tags based on search query from <search_query> tags.
+2. Prioritize comments with highest upvotes when extracting keywords.
+3. Only use exact quotes from the original text - no paraphrasing or summarizing.
+4. Classify the exact quoted keywords according to the definitions from <keyword_types_definitions> tags.
+</instrcutions>
+
+<requirements>
+1. Only extract exact quotes from original text - no paraphrasing or summarizing allowed.
+2. Only include terms and phrases from comments with high upvote counts.
+3. For each keyword type, only include terms that appear multiple times across high-ranking comments.
+4. Results within each category must be sorted by upvote count in descending order.
+5. Terms appearing only once or only in low-upvoted comments must be excluded.
+6. Each category MUST contain exactly 5 items, selecting those with the highest combination of frequency and upvotes.
+</requirements>
+
+<output_format>
+The output must strictly follow this structure with NO deviations:
+1. Each category must follow this exact format:
+Top 5 Product needs description phrases:
+- "[Exact Quote]" ([Upvotes] upvotes)
+- "[Exact Quote]" ([Upvotes] upvotes)
+- "[Exact Quote]" ([Upvotes] upvotes)
+- "[Exact Quote]" ([Upvotes] upvotes)
+- "[Exact Quote]" ([Upvotes] upvotes)
+Top 5 Descriptive adjectives:
+- "[Exact Quote]" ([Frequncy] times, [Upvotes] upvotes in total)
+- "[Exact Quote]" ([Frequncy] times, [Upvotes] upvotes in total)
+- "[Exact Quote]" ([Frequncy] times, [Upvotes] upvotes in total)
+- "[Exact Quote]" ([Frequncy] times, [Upvotes] upvotes in total)
+- "[Exact Quote]" ([Frequncy] times, [Upvotes] upvotes in total)
+Top 5 Professional terminology:
+- "[Exact Quote]" ([Frequncy] times, [Upvotes] upvotes in total)
+- "[Exact Quote]" ([Frequncy] times, [Upvotes] upvotes in total)
+- "[Exact Quote]" ([Frequncy] times, [Upvotes] upvotes in total)
+- "[Exact Quote]" ([Frequncy] times, [Upvotes] upvotes in total)
+- "[Exact Quote]" ([Frequncy] times, [Upvotes] upvotes in total)
+2. No other sections or analysis should be added.
+3. Only the lettered list of categories with their exact quotes, frequencies and upvotes is permitted.
+4. The output MUST END after the last category's quote list.
+</output_format>
+
+<output_examples>
+Examples of correct implementation:
+<output_example_1>
+Top 5 Product needs description phrases:
+- "need something that won't fall apart after a month" (890 upvotes)
+- "looking for shoes that can handle daily wear" (670 upvotes)
+- "want a pair that doesn't hurt after long walks" (450 upvotes) 
+- "need a shoe that looks good with everything" (420 upvotes)
+- "searching for something I can wear all day" (380 upvotes)
+Top 5 Descriptive adjectives:
+- "incredibly durable" (32 times, 1200 upvotes in total)  
+- "super comfortable" (28 times, 950 upvotes in total)
+- "quite expensive" (15 times, 780 upvotes in total)
+- "extremely versatile" (12 times, 650 upvotes in total)
+- "genuinely reliable" (10 times, 580 upvotes in total)
+Top 5 Professional terminology:
+- "arch support" (25 times, 1500 upvotes in total)
+- "breathable mesh upper" (18 times, 920 upvotes in total) 
+- "EVA midsole cushioning" (10 times, 780 upvotes in total)
+- "orthotic inserts" (8 times, 650 upvotes in total)
+- "moisture wicking liner" (6 times, 450 upvotes in total)
+</output_example_1>
+<output_example_2>
+Top 5 Product needs description phrases:
+- "want a camera that works well in low light" (1200 upvotes)
+- "need something easy to carry around" (950 upvotes)
+- "looking for good value for money" (820 upvotes)
+- "want to shoot high quality video" (650 upvotes)
+- "need a camera that's quick to focus" (580 upvotes)
+Top 5 Descriptive adjectives:
+- "lightweight" (45 times, 1500 upvotes in total)
+- "responsive" (38 times, 1200 upvotes in total)
+- "versatile" (25 times, 950 upvotes in total)
+- "compact" (20 times, 850 upvotes in total)
+- "intuitive" (15 times, 720 upvotes in total)
+Top 5 Professional terminology:
+- "dynamic range" (30 times, 1400 upvotes in total)
+- "focal length" (28 times, 1100 upvotes in total)
+- "image stabilization" (22 times, 900 upvotes in total)
+- "sensor size" (18 times, 780 upvotes in total)
+- "aperture settings" (15 times, 650 upvotes in total)
+</output_example_2>
+<output_example_3>
+Top 5 Product needs description phrases:
+- "need something that keeps me cool while gaming" (1500 upvotes)
+- "looking for a chair that supports long sessions" (1200 upvotes)
+- "want adjustable everything for perfect fit" (980 upvotes)
+- "need something that won't make noise" (850 upvotes)
+- "searching for a chair that helps posture" (720 upvotes)
+Top 5 Descriptive adjectives:
+- "ergonomic" (52 times, 1800 upvotes in total)
+- "adjustable" (48 times, 1500 upvotes in total)
+- "breathable" (35 times, 1200 upvotes in total)
+- "sturdy" (28 times, 950 upvotes in total)
+- "comfortable" (25 times, 880 upvotes in total)
+Top 5 Professional terminology:
+- "lumbar support" (40 times, 1600 upvotes in total)
+- "tilt mechanism" (35 times, 1300 upvotes in total)
+- "mesh backing" (30 times, 1100 upvotes in total)
+- "pneumatic lift" (25 times, 950 upvotes in total)
+- "armrest configuration" (20 times, 850 upvotes in total)
+</output_example_3>
+</output_examples>

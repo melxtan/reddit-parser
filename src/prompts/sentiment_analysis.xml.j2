@@ -1,0 +1,116 @@
+<scraped_info>{{scraped_info}}</scraped_info>
+
+<search_query>{{search_query}}</search_query>
+
+<sentiment_types_definitions>
+1. Overall sentiment: The dominant emotional tone (Positive/Negative/Neutral) based on explicit expressions and word choices in the text.
+2. Contextual sentiment: Hidden meanings, sarcasm, or implicit emotions that differ from the literal text meaning.
+</sentiment_types_definitions>
+
+<task>
+Analyze sentiment patterns in the provided Reddit posts and comments from <scraped_info> tags based on the search query from <search_query> tags. Output the analysis results in <sentiment_analysis> tags.
+</task>
+
+<instrcutions>
+1. Thoroughly understand and analyze scraped Reddit posts and comments from <scraped_info> tags based on search query from <search_query> tags.
+2. Prioritize comments with highest upvotes when analyzing sentiment.
+3. Classify sentiments according to the definitions from <sentiment_types_definitions> tags.
+</instrcutions>
+
+<requirements>
+1. Only analyze comments with significant upvote counts.
+2. Results must include both explicit sentiment and any detected implicit meanings.
+3. For sarcasm or implicit meanings, must provide the original quote and explanation.
+4. If no sarcasm or implicit meaning is detected, that section should be omitted.
+5. Each sentiment type must include supporting evidence from the text.
+</requirements>
+
+<output_format>
+The output must strictly follow this structure with NO deviations:
+1. Overall sentiment section is mandatory and must follow this exact format:
+Overall sentiment:
+
+- Sentiment: [Positive/Negative/Neutral]
+
+- Evidence: "[exact quote]" ([upvotes] upvotes)
+- Evidence: "[exact quote]" ([upvotes] upvotes)
+- Evidence: "[exact quote]" ([upvotes] upvotes)
+- Evidence: "[exact quote]" ([upvotes] upvotes)
+- Evidence: "[exact quote]" ([upvotes] upvotes)
+2. Contextual sentiment section is conditional and when present, must follow this exact format:
+Contextual sentiment interpretation:
+
+- Original: "[exact quote]" ([upvotes] upvotes)
+- Actual meaning: [interpretation]
+
+- Original: "[exact quote]" ([upvotes] upvotes)
+- Actual meaning: [interpretation]
+
+- Original: "[exact quote]" ([upvotes] upvotes)
+- Actual meaning: [interpretation]
+
+- Original: "[exact quote]" ([upvotes] upvotes)
+- Actual meaning: [interpretation]
+
+- Original: "[exact quote]" ([upvotes] upvotes)
+- Actual meaning: [interpretation]
+3. No other sections or analysis should be added.
+4. The output MUST END after the last section.
+5. Contextual sentiment interpretation section must be omitted if no sarcasm or implicit meaning is detected.
+</output_format>
+
+<output_examples>
+Examples of correct implementation:
+<output_example_1>
+Overall sentiment:
+
+- Sentiment: Negative
+
+- Evidence: "waste of money for the quality" (890 upvotes)
+- Evidence: "disappointingly flimsy construction" (670 upvotes)
+- Evidence: "not worth the premium price" (450 upvotes)
+- Evidence: "terrible build quality" (420 upvotes)
+- Evidence: "complete disappointment" (380 upvotes)
+
+Contextual sentiment interpretation:
+
+- Original: "Wow, another 'game-changing' product from them" (780 upvotes)
+- Actual meaning: Sarcasm expressing skepticism about marketing claims
+
+- Original: "Sure, if you like throwing money away" (550 upvotes)
+- Actual meaning: Implies poor value through ironic agreement
+
+- Original: "What a 'bargain' at this price point" (450 upvotes)
+- Actual meaning: Sarcastic comment about overpricing
+
+- Original: "They've really 'outdone' themselves this time" (400 upvotes)
+- Actual meaning: Ironic criticism of product quality
+
+- Original: "I'm 'totally impressed' by the attention to detail" (350 upvotes)
+- Actual meaning: Sarcasm indicating poor craftsmanship
+</output_example_1>
+
+<output_example_2>
+Overall sentiment:
+
+- Sentiment: Positive
+
+- Evidence: "exceeded my expectations" (1200 upvotes)
+- Evidence: "worth every penny" (950 upvotes)
+- Evidence: "fantastic build quality" (820 upvotes)
+- Evidence: "absolutely love the design" (750 upvotes)
+- Evidence: "best purchase I've made" (680 upvotes)
+</output_example_2>
+
+<output_example_3>
+Overall sentiment:
+
+- Sentiment: Neutral
+
+- Evidence: "decent for the price point" (800 upvotes)
+- Evidence: "works as expected" (650 upvotes)
+- Evidence: "average performance overall" (500 upvotes)
+- Evidence: "neither impressive nor disappointing" (450 upvotes)
+- Evidence: "meets basic requirements" (400 upvotes)
+</output_example_3>
+</output_examples>
