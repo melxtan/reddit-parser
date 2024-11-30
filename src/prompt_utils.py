@@ -4,29 +4,95 @@ from typing import Dict
 from jinja2 import Template, meta
 
 
-def load_prompt(prompt_name: str, variables: Dict[str, str] | None = None) -> str:
+# TODO, will use langfuse format or API
+class Prompt:
+    def __init__(self, prompt_name: str):
+        """
+        Initialize a Prompt object.
+
+        Args:
+            prompt_name: Name of the prompt file without .xml.j2 extension
+        """
+        self.prompt_name = prompt_name
+        self.variables: Dict[str, str] = {}
+        self._template_content = self._load_template()
+        self.required_vars = get_template_variables(self._template_content)
+        self.template = Template(self._template_content)
+        self._content: str = ""
+
+        # If no variables required, render immediately
+        if not self.required_vars:
+            self._content = self.template.render()
+
+    def _load_template(self) -> str:
+        prompt_dir = Path(__file__).parent / "prompts"
+        prompt_path = prompt_dir / f"{self.prompt_name}.xml.j2"
+
+        if not prompt_path.exists():
+            raise FileNotFoundError(f"Prompt file not found: {prompt_path}")
+
+        with open(prompt_path, "r", encoding="utf-8") as f:
+            return f.read()
+
+    @property
+    def content(self) -> str:
+        """
+        Get the rendered content. Raises ValueError if required variables are not set.
+        """
+        if self.required_vars and not self._content:
+            missing_vars = self.required_vars - set(self.variables.keys())
+            if missing_vars:
+                raise ValueError(
+                    f"Cannot access content: missing required variables: {missing_vars}"
+                )
+            self._content = self.template.render(**self.variables)
+        return self._content
+
+    def set_variables(self, variables: Dict[str, str]) -> "Prompt":
+        """
+        Set or update template variables and render the content.
+
+        Args:
+            variables: Dictionary of variables to substitute
+
+        Returns:
+            self for method chaining
+        """
+        self.variables.update(variables)
+
+        # Only render if we have all required variables
+        missing_vars = self.required_vars - set(self.variables.keys())
+        if not missing_vars:
+            self._content = self.template.render(**self.variables)
+        else:
+            # Clear previous render if we're missing variables
+            self._content = ""
+
+        return self
+
+
+def load_prompt(
+    prompt_name: str,
+    variables: Dict[str, str] | None = None,
+) -> str:
     """
-    Load and optionally render a prompt template.
+    Load and render a prompt template.
 
     Args:
         prompt_name: Name of the prompt file without .xml extension
         variables: Optional dictionary of variables to substitute
+
+    Returns:
+        Rendered prompt string
+
+    Raises:
+        ValueError: If template requires variables that aren't provided
+        FileNotFoundError: If prompt file doesn't exist
     """
-    prompt_dir = Path(__file__).parent / "prompts"
-    prompt_path = prompt_dir / f"{prompt_name}.xml"
-
-    if not prompt_path.exists():
-        raise FileNotFoundError(f"Prompt file not found: {prompt_path}")
-
-    with open(prompt_path, "r", encoding="utf-8") as f:
-        content = f.read()
-
+    prompt = Prompt(prompt_name)
     if variables:
-        template = Template(content)
-        return template.render(**variables)
-
-    return content
-
+        prompt.set_variables(variables)
+    return prompt.content
 
 def get_template_variables(content: str) -> set[str]:
     """Extract Jinja2 template variables from content string."""
