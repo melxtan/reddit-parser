@@ -30,14 +30,14 @@ def initialize_app() -> None:
         st.session_state.debug_info = {}
 
 
-def handle_aws_credentials():
+def handle__credentials():
     if not st.session_state.aws_creds:
         with st.sidebar.form("aws_creds_form"):
             aws_access_key = st.text_input(
-                "AWS Access Key ID", type="password", key="aws_access_key"
+                "Access Key ID", type="password", key="aws_access_key"
             )
             aws_secret_key = st.text_input(
-                "AWS Secret Access Key", type="password", key="aws_secret_key"
+                "Secret Access Key", type="password", key="aws_secret_key"
             )
             aws_region = st.text_input("AWS Region", value="us-west-2", key="aws_region")
 
