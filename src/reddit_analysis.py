@@ -8,7 +8,7 @@ import boto3
 from botocore.config import Config
 from prompt_utils import load_prompt
 
-from reddit_scraper.llm_caller import LLMCaller, LLMConfig
+from llm_caller import LLMCaller, LLMConfig
 
 logger = logging.getLogger(__name__)
 
