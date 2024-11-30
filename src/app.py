@@ -366,33 +366,27 @@ def display_analysis_results(task_order, filename):
 
 def main():
     task_order = RedditAnalyzer.TASKS
-
     initialize_app()
 
-    # Sidebar authentication
+    # Move password input and AWS credentials to sidebar
     with st.sidebar:
         st.title("Authentication")
         password_input = st.text_input(
-            "Enter password:", type="password", key="password_input"
+            "Enter password to access the app:", type="password", key="password_input"
         )
         
         if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
             st.success("Authentication successful!")
             
-            # Only show AWS credentials section after successful authentication
+            # AWS credentials section in sidebar
             st.title("AWS Credentials")
             handle_aws_credentials()
-        else:
-            st.error("Please enter valid password to access the app")
-            return  # Exit early if authentication fails
 
     if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
         st.title("Reddit Post Scraper")
-
         search_query, search_option, time_filter, max_posts, use_api, log_level = (
             render_search_interface()
         )
-
         if st.button("Scrape", key="scrape_button"):
             if search_query:
                 with st.spinner("Scraping data..."):
@@ -411,7 +405,6 @@ def main():
                         st.session_state.debug_info = {}
             else:
                 st.warning("Please enter a search query.")
-
         if st.session_state.post_data:
             df = display_data_summary(
                 st.session_state.post_data, search_query, search_option, time_filter
@@ -422,7 +415,6 @@ def main():
 
             if st.session_state.aws_creds:
                 st.subheader("Reddit Post Analysis")
-
                 col1, col2 = st.columns(2)
                 with col1:
                     min_comment_score = st.number_input(
@@ -444,28 +436,17 @@ def main():
                         help="Select how many of the top posts (sorted by score) to include in the analysis.",
                         key="num_top_posts",
                     )
-
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.button("Analyze Reddit Posts"):
-                        run_analysis(
-                            st.session_state.post_data,
-                            search_query,
-                            task_order,
-                            filename,
-                            min_comment_score=min_comment_score,
-                            num_top_posts=num_top_posts,
-                        )
-                with col2:
-                    if st.session_state.analysis_results and st.button("Run New Analysis"):
-                        st.session_state.analysis_results = {}
-                        st.session_state.task_containers = {}
-                        st.session_state.post_data = None
-                        st.rerun()
-
-                if st.session_state.analysis_results:
+                if st.button("Analyze Reddit Posts"):
+                    run_analysis(
+                        st.session_state.post_data,
+                        search_query,
+                        task_order,
+                        filename,
+                        min_comment_score=min_comment_score,
+                        num_top_posts=num_top_posts,
+                    )
+                elif st.session_state.analysis_results:
                     display_analysis_results(task_order, filename)
-
     else:
         st.sidebar.error("Incorrect password. Access denied.")
 
