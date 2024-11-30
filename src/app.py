@@ -471,6 +471,12 @@ def main():
                     )
                 elif st.session_state.analysis_results:
                     display_analysis_results(task_order, filename)
+
+                    if st.button("Run New Analysis"):
+                        st.session_state.analysis_results = {}
+                        st.session_state.task_containers = {}
+                        st.session_state.post_data = None
+                        st.rerun()
     else:
         st.sidebar.error("Incorrect password. Access denied.")
 
