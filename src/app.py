@@ -30,7 +30,7 @@ def initialize_app() -> None:
         st.session_state.debug_info = {}
 
 
-def handle__credentials():
+def handle_aws_credentials():
     if not st.session_state.aws_creds:
         with st.sidebar.form("aws_creds_form"):
             aws_access_key = st.text_input(
