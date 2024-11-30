@@ -12,9 +12,10 @@ from scrape_reddit import ScrapeReddit
 
 logger = logging.getLogger(__name__)
 
+
 def initialize_app() -> None:
     # Setup langfuse
-    os.environ["LANGFUSE_PUBLIC_KEY"] = "pk-lf-457d1b99-6acb-490c-a50c-71916af2b291"
+    os.environ["LANGFUSE_PUBLIC_KEY"] = "pk-lf-457d1b99-6acb-490c-a50c-71916af2b291",
     os.environ["LANGFUSE_SECRET_KEY"] = "sk-lf-33ed664d-236c-4c0b-b6d3-7b066a012c0a"
     os.environ["LANGFUSE_HOST"] = "https://us.cloud.langfuse.com"  # 🇺🇸 US region
 
@@ -33,6 +34,7 @@ def initialize_app() -> None:
         st.session_state.task_containers = {}
     if "debug_info" not in st.session_state:
         st.session_state.debug_info = {}
+
 
 def render_search_interface():
     search_query = st.text_input("Enter a search query:", key="search_query")
@@ -56,6 +58,7 @@ def render_search_interface():
         time_filter = st.selectbox(
             "Select time filter:",
             ["all", "year", "month", "week", "day", "hour"],
+            index=1,  # Set index=1 to select "year" as default since it's the second option
             format_func=lambda x: {
                 "all": "All time",
                 "year": "Past year",
@@ -205,6 +208,7 @@ def display_data_summary(post_data, search_query, search_option, time_filter):
 
     return df  # Return the complete flattened DataFrame
 
+
 def create_download_buttons(df, post_data, search_query, search_option, time_filter):
     col1, col2 = st.columns(2)
     safe_query = search_query.replace(" ", "_").lower()[:30]
@@ -242,6 +246,7 @@ def create_download_buttons(df, post_data, search_query, search_option, time_fil
 
     return filename
 
+
 def handle_aws_credentials():
     if not st.session_state.aws_creds:
         with st.form("aws_creds_form"):
@@ -269,6 +274,7 @@ def handle_aws_credentials():
             st.session_state.aws_creds = None
             st.rerun()
 
+
 def create_task_containers(task_order):
     for task_name in task_order:
         task_title = task_name.replace("_", " ").title()
@@ -284,6 +290,7 @@ def create_task_containers(task_order):
             "result": result_container,
             "debug": debug_container,
         }
+
 
 def clean_xml_result(result: dict) -> str:
     """Clean and format the analysis result for display.
@@ -314,6 +321,7 @@ def clean_xml_result(result: dict) -> str:
 
     return cleaned
 
+
 def update_task_status(task_name: str, result: dict, task_order: list, filename: str):
     containers = st.session_state.task_containers[task_name]
 
@@ -343,6 +351,7 @@ def update_task_status(task_name: str, result: dict, task_order: list, filename:
         # Only rerun when the last task completes
         if task_name == task_order[-1]:
             st.rerun()
+
 
 def run_analysis(
     post_data, search_query, task_order, filename, min_comment_score, num_top_posts
@@ -377,9 +386,6 @@ def run_analysis(
         st.error(f"Analysis failed: {str(e)}")
         logging.exception("Analysis error:")
 
-    except Exception as e:
-        st.error(f"Analysis failed: {str(e)}")
-        logging.exception("Analysis error:")
 
 def display_analysis_results(task_order, filename):
     for task_name in task_order:
@@ -412,7 +418,7 @@ def display_analysis_results(task_order, filename):
                     doc.add_heading(task_name.replace("_", " ").title(), level=1)
                     doc.add_paragraph(clean_xml_result(result))
                     doc.add_paragraph()
-        
+
         doc_buffer = io.BytesIO()
         doc.save(doc_buffer)
         doc_buffer.seek(0)
@@ -422,7 +428,9 @@ def display_analysis_results(task_order, filename):
     with col1:
         st.download_button(
             label="Download Complete Analysis (JSON)",
-            data=json.dumps(st.session_state.analysis_results, indent=2, ensure_ascii=False),
+            data=json.dumps(
+                st.session_state.analysis_results, indent=2, ensure_ascii=False
+            ),
             file_name=f"{filename}_analysis.json",
             mime="application/json",
             key="analysis_json_final",
@@ -437,27 +445,35 @@ def display_analysis_results(task_order, filename):
             key="analysis_word_final",
         )
 
+    if st.button("Run New Analysis", key="run_new_analysis"):
+        st.session_state.post_data = None
+        st.session_state.analysis_results = {}
+        st.session_state.task_containers = {}
+        st.session_state.debug_info = {}
+        st.rerun()
+        
+
 def main():
     task_order = RedditAnalyzer.TASKS
+
     initialize_app()
 
     with st.sidebar:
-        st.title("Authentication")
         password_input = st.text_input(
             "Enter password to access the app:", type="password", key="password_input"
         )
-        
+
         if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
-            st.success("Authentication successful!")
-            
-            st.title("AWS Credentials")
+            st.subheader("AWS Credentials")
             handle_aws_credentials()
 
     if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
         st.title("Reddit Post Scraper")
+
         search_query, search_option, time_filter, max_posts, use_api, log_level = (
             render_search_interface()
         )
+
         if st.button("Scrape", key="scrape_button"):
             if search_query:
                 with st.spinner("Scraping data..."):
@@ -476,6 +492,7 @@ def main():
                         st.session_state.debug_info = {}
             else:
                 st.warning("Please enter a search query.")
+
         if st.session_state.post_data:
             df = display_data_summary(
                 st.session_state.post_data, search_query, search_option, time_filter
@@ -486,6 +503,7 @@ def main():
 
             if st.session_state.aws_creds:
                 st.subheader("Reddit Post Analysis")
+
                 col1, col2 = st.columns(2)
                 with col1:
                     min_comment_score = st.number_input(
@@ -507,6 +525,7 @@ def main():
                         help="Select how many of the top posts (sorted by score) to include in the analysis.",
                         key="num_top_posts",
                     )
+
                 if st.button("Analyze Reddit Posts"):
                     run_analysis(
                         st.session_state.post_data,
@@ -519,13 +538,8 @@ def main():
                 elif st.session_state.analysis_results:
                     display_analysis_results(task_order, filename)
 
-                    if st.button("Run New Analysis"):
-                        st.session_state.analysis_results = {}
-                        st.session_state.task_containers = {}
-                        st.session_state.post_data = None
-                        st.rerun()
     else:
-        st.sidebar.error("Incorrect password. Access denied.")
+        st.error("Incorrect password. Access denied.")
 
 
 if __name__ == "__main__":
