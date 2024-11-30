@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 
 def initialize_app() -> None:
     # Setup langfuse
-    os.environ["LANGFUSE_PUBLIC_KEY"] = "pk-lf-457d1b99-6acb-490c-a50c-71916af2b291",
-    os.environ["LANGFUSE_SECRET_KEY"] = "sk-lf-33ed664d-236c-4c0b-b6d3-7b066a012c0a",
+    os.environ["LANGFUSE_PUBLIC_KEY"] = "pk-lf-457d1b99-6acb-490c-a50c-71916af2b291"
+    os.environ["LANGFUSE_SECRET_KEY"] = "sk-lf-33ed664d-236c-4c0b-b6d3-7b066a012c0a"
     os.environ["LANGFUSE_HOST"] = "https://us.cloud.langfuse.com"  # 🇺🇸 US region
 
     logging.basicConfig(
