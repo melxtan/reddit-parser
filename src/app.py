@@ -189,6 +189,10 @@ def display_data_summary(post_data, search_query, search_option, time_filter):
 
     # Display summary statistics
     st.subheader("Summary")
+    search_info = f"Search query: {search_query}" if search_query else f"Subreddit: r/{post_data[0]['subreddit']}"
+    st.write(search_info)
+    st.write(f"Sort: {search_option}, Time filter: {time_filter}")
+    
     posts_count = len(df[df["type"] == "post"])
     comments_count = len(df[df["type"] == "comment"])
     st.write(f"Number of posts: {posts_count}")
@@ -235,8 +239,7 @@ def display_data_summary(post_data, search_query, search_option, time_filter):
     preview_df = pd.DataFrame(preview_rows)
     st.dataframe(preview_df, hide_index=True)
 
-    return df  # Return the complete flattened DataFrame
-
+    return df
 
 def create_download_buttons(df, post_data, search_query, search_option, time_filter):
     col1, col2 = st.columns(2)
@@ -532,9 +535,7 @@ def main():
         if st.session_state.post_data:
             df = display_data_summary(
                 st.session_state.post_data,
-                search_type,
-                search_query,
-                subreddit_name,
+                search_query if search_type == "Search Query" else None,
                 search_option,
                 time_filter,
             )
