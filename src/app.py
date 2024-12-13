@@ -637,27 +637,30 @@ def display_existing_data(
     time_filter: str,
     task_order: List[str],
 ) -> None:
-    """Display existing data and analysis options."""
+    """Display existing post data and analysis options."""
     df = display_data_summary(
         st.session_state.post_data,
         search_query if search_type == "Search Query" else None,
         search_option,
-        time_filter,
+        time_filter
     )
+    
     filename = create_download_buttons(
         df,
         st.session_state.post_data,
         search_query if search_type == "Search Query" else None,
         search_option,
-        time_filter,
+        time_filter
     )
 
     if not st.session_state.aws_creds:
         return
 
     st.subheader("Reddit Post Analysis")
-    analysis_params = get_analysis_parameters()
     
+    # Get analysis parameters
+    params = get_analysis_parameters()
+
     if st.button("Analyze Reddit Posts"):
         run_analysis(
             post_data=st.session_state.post_data,
@@ -666,13 +669,11 @@ def display_existing_data(
             subreddit_name=subreddit_name,
             task_order=task_order,
             filename=filename,
-            min_comment_score=min_comment_score,
-            num_top_posts=num_top_posts
-
+            min_comment_score=params["min_comment_score"],
+            num_top_posts=params["num_top_posts"]
         )
     elif st.session_state.analysis_results:
         display_analysis_results(task_order, filename)
-
 
 def get_analysis_parameters() -> Dict[str, int]:
     """Get analysis parameters from user input."""
