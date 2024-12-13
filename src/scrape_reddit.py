@@ -235,3 +235,77 @@ class ScrapeReddit:
     def destroy(self):
         if not self.use_api and self.driver:
             self.driver.quit()
+
+    def get_subreddit_posts(
+        self, subreddit_name: str, search_option="hot", time_filter="all", limit=None
+    ) -> List[str]:
+        """Get posts from a specific subreddit."""
+        if self.use_api:
+            return self._get_subreddit_posts_api(subreddit_name, search_option, time_filter, limit)
+        else:
+            return self._get_subreddit_posts_webdriver(subreddit_name, search_option, time_filter, limit)
+    
+    def _get_subreddit_posts_api(
+        self, subreddit_name: str, search_option: str, time_filter: str, limit: int
+    ) -> List[str]:
+        self.logger.info(
+            f"Fetching posts from r/{subreddit_name} with sort: {search_option} and time filter: {time_filter}"
+        )
+        urls = []
+        subreddit = self.reddit.subreddit(subreddit_name)
+        
+        # Get the appropriate listing generator based on search_option
+        if search_option == "hot":
+            posts = subreddit.hot(limit=limit)
+        elif search_option == "new":
+            posts = subreddit.new(limit=limit)
+        elif search_option == "top":
+            posts = subreddit.top(time_filter=time_filter, limit=limit)
+        else:  # default to hot
+            posts = subreddit.hot(limit=limit)
+        
+        for submission in posts:
+            urls.append(f"https://www.reddit.com{submission.permalink}")
+        
+        self.logger.info(f"Collected {len(urls)} URLs from r/{subreddit_name}")
+        return urls
+    
+    def _get_subreddit_posts_webdriver(
+        self, subreddit_name: str, search_option: str, time_filter: str, limit: int
+    ) -> List[str]:
+        self.logger.info(
+            f"Fetching posts from r/{subreddit_name} with sort: {search_option} and time filter: {time_filter}"
+        )
+        
+        # Construct the subreddit URL with appropriate sorting
+        sort_url = f"/{search_option}" if search_option != "hot" else ""
+        time_param = f"?t={time_filter}" if time_filter != "all" and search_option == "top" else ""
+        subreddit_url = f"https://www.reddit.com/r/{subreddit_name}{sort_url}{time_param}"
+        
+        self.driver.get(subreddit_url)
+        
+        try:
+            WebDriverWait(self.driver, 30).until(
+                EC.presence_of_element_located(
+                    (By.CSS_SELECTOR, "div[data-testid='post-container']")
+                )
+            )
+        except TimeoutException:
+            self.logger.warning("Timeout waiting for posts to load. Proceeding anyway.")
+        
+        html = self.lazy_scroll()
+        soup = BeautifulSoup(html, "html.parser")
+        
+        post_links = soup.find_all("a", href=re.compile(r"^/r/.*?/comments/"))
+        base_url = "https://www.reddit.com"
+        
+        urls = []
+        seen = set()
+        for link in post_links:
+            full_url = base_url + link["href"]
+            if full_url not in seen:
+                urls.append(full_url)
+                seen.add(full_url)
+        
+        self.logger.info(f"Collected {len(urls)} unique URLs from r/{subreddit_name}")
+        return urls[:limit] if limit else urls
