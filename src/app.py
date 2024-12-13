@@ -243,8 +243,15 @@ def display_data_summary(post_data, search_query, search_option, time_filter):
 
 def create_download_buttons(df, post_data, search_query, search_option, time_filter):
     col1, col2 = st.columns(2)
-    safe_query = search_query.replace(" ", "_").lower()[:30]
-    filename = f"reddit_{safe_query}_{search_option}_{time_filter}"
+    
+    # Get the subreddit name from the first post if this was a subreddit search
+    subreddit_name = post_data[0]['subreddit'] if not search_query else None
+    
+    if search_query:
+        safe_query = search_query.replace(" ", "_").lower()[:30]
+        filename = f"reddit_{safe_query}_{search_option}_{time_filter}"
+    else:
+        filename = f"reddit_r_{subreddit_name}_{search_option}_{time_filter}"
 
     with col1:
         json_str = json.dumps(post_data, indent=2, ensure_ascii=False)
@@ -277,7 +284,6 @@ def create_download_buttons(df, post_data, search_query, search_option, time_fil
         )
 
     return filename
-
 
 def handle_aws_credentials():
     if not st.session_state.aws_creds:
@@ -542,9 +548,7 @@ def main():
             filename = create_download_buttons(
                 df,
                 st.session_state.post_data,
-                search_type,
-                search_query,
-                subreddit_name,
+                search_query if search_type == "Search Query" else None,
                 search_option,
                 time_filter,
             )
