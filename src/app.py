@@ -547,76 +547,6 @@ def display_analysis_results(task_order: List[str], filename: str) -> None:
         st.session_state.debug_info = {}
         st.rerun()
 
-
-def main() -> None:
-    """Main application function."""
-    task_order = RedditAnalyzer.TASKS
-    initialize_app()
-
-    with st.sidebar:
-        password_input = st.text_input(
-            "Enter password to access the app:",
-            type="password",
-            key="password_input",
-        )
-
-        if password_input == st.secrets["APP_PASSWORD"]:
-            st.subheader("AWS Credentials")
-            handle_aws_credentials()
-
-    if password_input != st.secrets["APP_PASSWORD"]:
-        st.error("Incorrect password. Access denied.")
-        return
-
-    st.title("Reddit Post Scraper")
-    (
-        search_type,
-        search_query,
-        subreddit_name,
-        search_option,
-        time_filter,
-        max_posts,
-        use_api,
-        log_level,
-    ) = render_search_interface()
-
-    if not st.button("Scrape", key="scrape_button"):
-        if st.session_state.post_data:
-            display_existing_data(
-                search_type,
-                search_query,
-                subreddit_name,
-                search_option,
-                time_filter,
-                task_order,
-            )
-        return
-
-    # Validate input based on search type
-    if not validate_search_input(search_type, search_query, subreddit_name):
-        st.warning(
-            "Please enter a search query or subreddit name, depending on your selected search type."
-        )
-        return
-
-    with st.spinner("Scraping data..."):
-        post_data = scrape_reddit_data(
-            search_type,
-            search_query,
-            subreddit_name,
-            search_option,
-            time_filter,
-            max_posts,
-            use_api,
-            log_level,
-        )
-        if post_data:
-            st.session_state.post_data = post_data
-            st.session_state.analysis_results = {}
-            st.session_state.task_containers = {}
-            st.session_state.debug_info = {}
-
-
 def validate_search_input(
     search_type: str,
     search_query: Optional[str],
@@ -706,6 +636,82 @@ def get_analysis_parameters() -> Dict[str, int]:
         "num_top_posts": num_top_posts,
     }
 
+def main() -> None:
+    """Main application function."""
+    task_order = RedditAnalyzer.TASKS
+    initialize_app()
+
+    with st.sidebar:
+        password_input = st.text_input(
+            "Enter password to access the app:",
+            type="password",
+            key="password_input",
+        )
+
+        if password_input == st.secrets["APP_PASSWORD"]:
+            st.subheader("AWS Credentials")
+            handle_aws_credentials()
+
+    if password_input != st.secrets["APP_PASSWORD"]:
+        st.error("Incorrect password. Access denied.")
+        return
+
+    st.title("Reddit Post Scraper")
+    (
+        search_type,
+        search_query,
+        subreddit_name,
+        search_option,
+        time_filter,
+        max_posts,
+        use_api,
+        log_level,
+    ) = render_search_interface()
+
+    if not st.button("Scrape", key="scrape_button"):
+        if st.session_state.post_data:
+            display_existing_data(
+                search_type,
+                search_query,
+                subreddit_name,
+                search_option,
+                time_filter,
+                task_order,
+            )
+        return
+
+    # Validate input based on search type
+    if not validate_search_input(search_type, search_query, subreddit_name):
+        st.warning(
+            "Please enter a search query or subreddit name, depending on your selected search type."
+        )
+        return
+
+    with st.spinner("Scraping data..."):
+        post_data = scrape_reddit_data(
+            search_type,
+            search_query,
+            subreddit_name,
+            search_option,
+            time_filter,
+            max_posts,
+            use_api,
+            log_level,
+        )
+        if post_data:
+            st.session_state.post_data = post_data
+            st.session_state.analysis_results = {}
+            st.session_state.task_containers = {}
+            st.session_state.debug_info = {}
+
+            display_existing_data(
+                    search_type,
+                    search_query,
+                    subreddit_name,
+                    search_option,
+                    time_filter,
+                    task_order,
+                )
 
 if __name__ == "__main__":
     main()
