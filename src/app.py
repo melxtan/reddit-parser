@@ -37,13 +37,35 @@ def initialize_app() -> None:
 
 
 def render_search_interface():
-    search_query = st.text_input("Enter a search query:", key="search_query")
+    search_type = st.radio(
+        "Select search type:",
+        ["Search Query", "Subreddit"],
+        help="Choose whether to search across all of Reddit or scrape a specific subreddit",
+    )
+    
+    if search_type == "Search Query":
+        search_query = st.text_input("Enter a search query:", key="search_query")
+        subreddit_name = None
+    else:
+        search_query = None
+        subreddit_name = st.text_input(
+            "Enter subreddit name (without r/):",
+            key="subreddit_name",
+            help="Enter the name of the subreddit you want to scrape (e.g., 'Python' for r/Python)",
+        )
+    
     col1, col2 = st.columns(2)
-
+    
     with col1:
+        search_options = (
+            ["relevance", "hot", "top", "new", "comments"]
+            if search_type == "Search Query"
+            else ["hot", "new", "top"]
+        )
+        
         search_option = st.selectbox(
-            "Select search option:",
-            ["relevance", "hot", "top", "new", "comments"],
+            "Select sort option:",
+            search_options,
             format_func=lambda x: {
                 "relevance": "Relevance",
                 "hot": "Hot",
@@ -53,12 +75,12 @@ def render_search_interface():
             }[x],
             key="search_option",
         )
-
+    
     with col2:
         time_filter = st.selectbox(
             "Select time filter:",
             ["all", "year", "month", "week", "day", "hour"],
-            index=1,  # Set index=1 to select "year" as default since it's the second option
+            index=1,
             format_func=lambda x: {
                 "all": "All time",
                 "year": "Past year",
@@ -69,59 +91,66 @@ def render_search_interface():
             }[x],
             key="time_filter",
         )
-
+    
     max_posts = st.number_input(
         "Maximum number of posts to scrape (0 for no limit):",
         min_value=0,
         value=10,
         key="max_posts",
     )
-
+    
     use_api = st.checkbox(
         "Use Reddit API (faster, but may hit rate limits)", value=True, key="use_api"
     )
-
+    
     log_level = st.selectbox(
         "Select log level:",
         ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
         index=1,
         key="log_level",
     )
-
-    return search_query, search_option, time_filter, max_posts, use_api, log_level
-
+    
+    return search_type, search_query, subreddit_name, search_option, time_filter, max_posts, use_api, log_level
 
 def scrape_reddit_data(
-    search_query, search_option, time_filter, max_posts, use_api, log_level
+    search_type, search_query, subreddit_name, search_option, time_filter, max_posts, use_api, log_level
 ):
     try:
         scraper = ScrapeReddit(
             use_api=use_api,
             log_level=logging.getLevelName(log_level),
-            client_id="uLbd7l7K0bLH2zsaTpIOTw",
-            client_secret="UOtiC3y7HAAiNyF-90fVQvDqgarVJg",
-            user_agent="melxtan",
+            client_id=st.secrets["REDDIT_CLIENT_ID"],
+            client_secret=st.secrets["REDDIT_CLIENT_SECRET"],
+            user_agent=st.secrets["REDDIT_USER_AGENT"],
         )
-
+        
         st.info(f"Fetching posts. Max posts: {max_posts}")
-        post_urls = scraper.get_posts(
-            search_query,
-            time_filter=time_filter,
-            search_option=search_option,
-            limit=max_posts,
-        )
-
+        
+        if search_type == "Search Query":
+            post_urls = scraper.get_posts(
+                search_query,
+                time_filter=time_filter,
+                search_option=search_option,
+                limit=max_posts,
+            )
+        else:
+            post_urls = scraper.get_subreddit_posts(
+                subreddit_name,
+                search_option=search_option,
+                time_filter=time_filter,
+                limit=max_posts,
+            )
+        
         st.info(f"Fetching post info for {len(post_urls)} posts")
         post_data = scraper.get_reddit_post_info(post_urls)
-
+        
         scraper.destroy()
         return post_data
-
+    
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
         logging.exception("An error occurred during scraping:")
         return None
-
 
 def display_data_summary(post_data, search_query, search_option, time_filter):
     # Create full flattened structure with type indicator
@@ -463,22 +492,27 @@ def main():
             "Enter password to access the app:", type="password", key="password_input"
         )
 
-        if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
+        if password_input == st.secrets["APP_PASSWORD"]:
             st.subheader("AWS Credentials")
             handle_aws_credentials()
 
-    if password_input == "A7f@k9Lp#Q1z&W2x^mT3":
+    if password_input == st.secrets["APP_PASSWORD"]:
         st.title("Reddit Post Scraper")
 
-        search_query, search_option, time_filter, max_posts, use_api, log_level = (
+        search_type, search_query, subreddit_name, search_option, time_filter, max_posts, use_api, log_level = (
             render_search_interface()
         )
 
         if st.button("Scrape", key="scrape_button"):
-            if search_query:
+            # Validate input based on search type
+            if (search_type == "Search Query" and search_query) or (
+                search_type == "Subreddit" and subreddit_name
+            ):
                 with st.spinner("Scraping data..."):
                     post_data = scrape_reddit_data(
+                        search_type,
                         search_query,
+                        subreddit_name,
                         search_option,
                         time_filter,
                         max_posts,
@@ -491,14 +525,27 @@ def main():
                         st.session_state.task_containers = {}
                         st.session_state.debug_info = {}
             else:
-                st.warning("Please enter a search query.")
+                st.warning(
+                    "Please enter a search query or subreddit name, depending on your selected search type."
+                )
 
         if st.session_state.post_data:
             df = display_data_summary(
-                st.session_state.post_data, search_query, search_option, time_filter
+                st.session_state.post_data,
+                search_type,
+                search_query,
+                subreddit_name,
+                search_option,
+                time_filter,
             )
             filename = create_download_buttons(
-                df, st.session_state.post_data, search_query, search_option, time_filter
+                df,
+                st.session_state.post_data,
+                search_type,
+                search_query,
+                subreddit_name,
+                search_option,
+                time_filter,
             )
 
             if st.session_state.aws_creds:
@@ -521,7 +568,7 @@ def main():
                         "Number of top posts to analyze:",
                         min_value=1,
                         max_value=num_posts,
-                        value=num_posts,
+                        value=min(10, num_posts),
                         help="Select how many of the top posts (sorted by score) to include in the analysis.",
                         key="num_top_posts",
                     )
@@ -529,7 +576,9 @@ def main():
                 if st.button("Analyze Reddit Posts"):
                     run_analysis(
                         st.session_state.post_data,
+                        search_type,
                         search_query,
+                        subreddit_name,
                         task_order,
                         filename,
                         min_comment_score=min_comment_score,
