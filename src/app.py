@@ -436,44 +436,46 @@ def update_task_status(
 
 
 def run_analysis(
-    post_data: List[Dict[str, Any]],
-    search_query: str,
-    task_order: List[str],
-    filename: str,
-    min_comment_score: int,
-    num_top_posts: int,
-) -> None:
-    """Run analysis on Reddit post data."""
+    post_data, 
+    search_type, 
+    search_query, 
+    subreddit_name, 
+    task_order, 
+    filename, 
+    min_comment_score, 
+    num_top_posts
+):
     try:
         os.environ["AWS_ACCESS_KEY_ID"] = st.session_state.aws_creds["access_key"]
         os.environ["AWS_SECRET_ACCESS_KEY"] = st.session_state.aws_creds["secret_key"]
 
         st.info(
-            f"Due to rate limit, we are currently only analyzing top {num_top_posts} posts "
-            f"with highest scores. Only comments with a minimum score of {min_comment_score} "
-            "will be included in the analysis."
+            f"Due to rate limit, we are currently only analyzing top {num_top_posts} most relevant posts. "
+            f"Only comments with a minimum score of {min_comment_score} will be included in the analysis."
         )
 
         create_task_containers(task_order)
         st.session_state.analysis_results = {}
         st.session_state.debug_info = {}
 
-        def callback(task_name: str, result: Dict[str, Any]) -> None:
+        def callback(task_name: str, result: dict) -> None:
             update_task_status(task_name, result, task_order, filename)
 
+        # Use search query or subreddit name based on search type
+        query_text = search_query if search_type == "Search Query" else f"r/{subreddit_name}"
+        
         analyze_reddit_data(
             post_data=post_data,
-            search_query=search_query,
+            search_query=query_text,
             callback=callback,
-            region_name=st.session_state.aws_creds["region"],
             rate_limit_per_second=0.5,
             num_top_posts=num_top_posts,
             min_comment_score=min_comment_score,
         )
 
-    except Exception as exc:
-        st.error(f"Analysis failed: {str(exc)}")
-        logger.exception("Analysis error:")
+    except Exception as e:
+        st.error(f"Analysis failed: {str(e)}")
+        logging.exception("Analysis error:")
 
 
 def create_word_doc(task_order: List[str]) -> io.BytesIO:
@@ -658,14 +660,15 @@ def display_existing_data(
     
     if st.button("Analyze Reddit Posts"):
         run_analysis(
-            st.session_state.post_data,
-            search_type,
-            search_query,
-            subreddit_name,
-            task_order,
-            filename,
-            min_comment_score=analysis_params["min_comment_score"],
-            num_top_posts=analysis_params["num_top_posts"],
+            post_data=st.session_state.post_data,
+            search_type=search_type,
+            search_query=search_query,
+            subreddit_name=subreddit_name,
+            task_order=task_order,
+            filename=filename,
+            min_comment_score=min_comment_score,
+            num_top_posts=num_top_posts
+
         )
     elif st.session_state.analysis_results:
         display_analysis_results(task_order, filename)
